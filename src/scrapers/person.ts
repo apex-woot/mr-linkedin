@@ -351,7 +351,7 @@ export class PersonScraper extends BaseScraper {
       if (children.length < 2) return null
 
       const companyLink = children[0]?.locator('a').first()
-      const companyUrl = (await companyLink.getAttribute('href')) ?? undefined
+      const companyUrl = companyLink ? (await companyLink.getAttribute('href')) ?? undefined : undefined
 
       const detailContainer = children[1]!
       const detailChildren = await detailContainer.locator('> *').all()
@@ -363,7 +363,7 @@ export class PersonScraper extends BaseScraper {
         const nestedListCount = await detailChildren[1]
           ?.locator('.pvs-list__container')
           .count()
-        hasNestedPositions = nestedListCount > 0
+        hasNestedPositions = (nestedListCount ?? 0) > 0
       }
 
       if (hasNestedPositions) {
@@ -390,32 +390,32 @@ export class PersonScraper extends BaseScraper {
           const ariaSpan = outerSpans[0]
             ?.locator('span[aria-hidden="true"]')
             .first()
-          positionTitle = (await ariaSpan.textContent()) || ''
+          positionTitle = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
         }
         if (outerSpans.length >= 2) {
           const ariaSpan = outerSpans[1]
             ?.locator('span[aria-hidden="true"]')
             .first()
-          companyName = (await ariaSpan.textContent()) || ''
+          companyName = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
         }
         if (outerSpans.length >= 3) {
           const ariaSpan = outerSpans[2]
             ?.locator('span[aria-hidden="true"]')
             .first()
-          workTimes = (await ariaSpan.textContent()) || ''
+          workTimes = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
         }
         if (outerSpans.length >= 4) {
           const ariaSpan = outerSpans[3]
             ?.locator('span[aria-hidden="true"]')
             .first()
-          location = (await ariaSpan.textContent()) || ''
+          location = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
         }
 
         const { fromDate, toDate, duration } = this.parseWorkTimes(workTimes)
 
         let description = ''
         if (detailChildren.length > 1) {
-          description = await detailChildren[1]?.innerText()
+          description = (await detailChildren[1]?.innerText()) ?? ''
         }
 
         return {
@@ -455,15 +455,15 @@ export class PersonScraper extends BaseScraper {
         const ariaSpan = outerSpans[0]
           ?.locator('span[aria-hidden="true"]')
           .first()
-        companyName = (await ariaSpan.textContent()) || ''
+        companyName = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
       }
 
       const nestedContainer = detailChildren[1]
         ?.locator('.pvs-list__container')
         .first()
-      const nestedItems = await nestedContainer
+      const nestedItems = nestedContainer ? await nestedContainer
         .locator('.pvs-list__paged-list-item')
-        .all()
+        .all() : []
 
       for (const nestedItem of nestedItems) {
         try {
@@ -487,26 +487,26 @@ export class PersonScraper extends BaseScraper {
             const ariaSpan = positionSpans[0]
               ?.locator('span[aria-hidden="true"]')
               .first()
-            positionTitle = (await ariaSpan.textContent()) || ''
+            positionTitle = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
           }
           if (positionSpans.length >= 2) {
             const ariaSpan = positionSpans[1]
               ?.locator('span[aria-hidden="true"]')
               .first()
-            workTimes = (await ariaSpan.textContent()) || ''
+            workTimes = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
           }
           if (positionSpans.length >= 3) {
             const ariaSpan = positionSpans[2]
               ?.locator('span[aria-hidden="true"]')
               .first()
-            location = (await ariaSpan.textContent()) || ''
+            location = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
           }
 
           const { fromDate, toDate, duration } = this.parseWorkTimes(workTimes)
 
           let description = ''
           if (linkChildren.length > 1) {
-            description = await linkChildren[1]?.innerText()
+            description = (await linkChildren[1]?.innerText()) ?? ''
           }
 
           experiences.push({
@@ -539,19 +539,19 @@ export class PersonScraper extends BaseScraper {
 
     try {
       const parts = workTimes.split('·')
-      const times = parts.length > 0 ? parts[0]?.trim() : ''
-      const duration = parts.length > 1 ? parts[1]?.trim() : null
+      const times = parts.length > 0 ? parts[0]?.trim() ?? '' : ''
+      const duration = parts.length > 1 ? parts[1]?.trim() ?? null : null
 
       let fromDate: string | null = null
       let toDate: string | null = null
 
-      if (times.includes(' - ')) {
+      if (times && times.includes(' - ')) {
         const dateParts = times.split(' - ')
-        fromDate = dateParts[0]?.trim()
-        toDate = dateParts.length > 1 ? dateParts[1]?.trim() : ''
+        fromDate = dateParts[0]?.trim() ?? null
+        toDate = dateParts.length > 1 ? dateParts[1]?.trim() ?? null : null
       } else {
-        fromDate = times
-        toDate = ''
+        fromDate = times || null
+        toDate = null
       }
 
       return { fromDate, toDate, duration }
@@ -731,8 +731,9 @@ export class PersonScraper extends BaseScraper {
       if (children.length < 2) return null
 
       const institutionLink = children[0]?.locator('a').first()
-      const institutionUrl =
-        (await institutionLink.getAttribute('href')) ?? undefined
+      const institutionUrl = institutionLink
+        ? (await institutionLink.getAttribute('href')) ?? undefined
+        : undefined
 
       const detailContainer = children[1]!
       const detailChildren = await detailContainer.locator('> *').all()
@@ -755,30 +756,30 @@ export class PersonScraper extends BaseScraper {
         const ariaSpan = outerSpans[0]
           ?.locator('span[aria-hidden="true"]')
           .first()
-        institutionName = (await ariaSpan.textContent()) || ''
+        institutionName = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
       }
 
       if (outerSpans.length === 3) {
         const ariaSpan1 = outerSpans[1]
           ?.locator('span[aria-hidden="true"]')
           .first()
-        degree = await ariaSpan1.textContent()
+        degree = ariaSpan1 ? await ariaSpan1.textContent() : null
         const ariaSpan2 = outerSpans[2]
           ?.locator('span[aria-hidden="true"]')
           .first()
-        times = (await ariaSpan2.textContent()) || ''
+        times = ariaSpan2 ? (await ariaSpan2.textContent()) || '' : ''
       } else if (outerSpans.length === 2) {
         const ariaSpan = outerSpans[1]
           ?.locator('span[aria-hidden="true"]')
           .first()
-        times = (await ariaSpan.textContent()) || ''
+        times = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
       }
 
       const { fromDate, toDate } = this.parseEducationTimes(times)
 
       let description = ''
       if (detailChildren.length > 1) {
-        description = await detailChildren[1]?.innerText()
+        description = (await detailChildren[1]?.innerText()) ?? ''
       }
 
       return {
@@ -804,8 +805,8 @@ export class PersonScraper extends BaseScraper {
     try {
       if (times.includes(' - ')) {
         const parts = times.split(' - ')
-        const fromDate = parts[0]?.trim()
-        const toDate = parts.length > 1 ? parts[1]?.trim() : ''
+        const fromDate = parts[0]?.trim() ?? null
+        const toDate = parts.length > 1 ? parts[1]?.trim() ?? null : null
         return { fromDate, toDate }
       } else {
         const year = times.trim()
@@ -1043,9 +1044,9 @@ export class PersonScraper extends BaseScraper {
           title = text
         } else if (text.includes('Issued by')) {
           const parts = text.split('·')
-          issuer = parts[0]?.replace('Issued by', '').trim()
+          issuer = parts[0]?.replace('Issued by', '').trim() ?? ''
           if (parts.length > 1) {
-            issuedDate = parts[1]?.trim()
+            issuedDate = parts[1]?.trim() ?? ''
           }
         } else if (text.startsWith('Issued ') && !issuedDate) {
           issuedDate = text.replace('Issued ', '')
@@ -1058,7 +1059,7 @@ export class PersonScraper extends BaseScraper {
           !issuedDate
         ) {
           if (text.includes('·')) {
-            issuedDate = text.split('·')[0]?.trim()
+            issuedDate = text.split('·')[0]?.trim() ?? ''
           } else {
             issuedDate = text
           }

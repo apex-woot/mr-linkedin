@@ -1,22 +1,3 @@
-function createErrorClass<T extends Record<string, unknown>>(
-  name: string,
-  extraProps?: (instance: LinkedInScraperError & T) => void,
-) {
-  return class extends LinkedInScraperError {
-    constructor(message: string) {
-      super(message)
-      this.name = name
-      Object.setPrototypeOf(this, new.target.prototype)
-      if (extraProps) {
-        extraProps(this as LinkedInScraperError & T)
-      }
-    }
-  } as new (
-    message: string,
-    ...args: unknown[]
-  ) => LinkedInScraperError & T
-}
-
 export class LinkedInScraperError extends Error {
   constructor(message: string) {
     super(message)
@@ -25,17 +6,45 @@ export class LinkedInScraperError extends Error {
   }
 }
 
-export class AuthenticationError extends createErrorClass(
-  'AuthenticationError',
-) {}
-export class ElementNotFoundError extends createErrorClass(
-  'ElementNotFoundError',
-) {}
-export class ProfileNotFoundError extends createErrorClass(
-  'ProfileNotFoundError',
-) {}
-export class NetworkError extends createErrorClass('NetworkError') {}
-export class ScrapingError extends createErrorClass('ScrapingError') {}
+export class AuthenticationError extends LinkedInScraperError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AuthenticationError'
+    Object.setPrototypeOf(this, AuthenticationError.prototype)
+  }
+}
+
+export class ElementNotFoundError extends LinkedInScraperError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ElementNotFoundError'
+    Object.setPrototypeOf(this, ElementNotFoundError.prototype)
+  }
+}
+
+export class ProfileNotFoundError extends LinkedInScraperError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ProfileNotFoundError'
+    Object.setPrototypeOf(this, ProfileNotFoundError.prototype)
+  }
+}
+
+export class NetworkError extends LinkedInScraperError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'NetworkError'
+    Object.setPrototypeOf(this, NetworkError.prototype)
+  }
+}
+
+export class ScrapingError extends LinkedInScraperError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ScrapingError'
+    Object.setPrototypeOf(this, ScrapingError.prototype)
+  }
+}
 
 export class RateLimitError extends LinkedInScraperError {
   constructor(

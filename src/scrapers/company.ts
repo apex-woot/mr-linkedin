@@ -56,7 +56,7 @@ export class CompanyScraper extends BaseScraper {
           const paragraphs = await section.locator('p').all()
           if (paragraphs.length > 0) {
             const about = await paragraphs[0]?.innerText()
-            return about.trim()
+            return about?.trim() ?? null
           }
         }
       }
