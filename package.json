@@ -1,9 +1,48 @@
 {
-  "name": "mr-scraper",
+  "name": "@apexwoot/mr-scraper",
   "version": "1.0.0",
-  "module": "index.ts",
+  "description": "TypeScript library for scraping LinkedIn profiles, companies, and job listings using Playwright",
   "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "linkedin",
+    "scraper",
+    "playwright",
+    "typescript",
+    "web-scraping",
+    "linkedin-api",
+    "linkedin-scraper"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apexwoot/mr-linkedin.git"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  },
+  "bugs": {
+    "url": "https://github.com/apexwoot/mr-linkedin/issues"
+  },
+  "homepage": "https://github.com/apexwoot/mr-linkedin#readme",
+  "author": "apexwoot",
   "license": "GPL-3.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
     "@types/bun": "latest"
@@ -16,7 +55,9 @@
     "scrape": "bun run index.ts",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "build": "bun run build.ts",
+    "prepublishOnly": "bun run build && bun test"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
