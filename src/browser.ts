@@ -101,16 +101,12 @@ export class BrowserManager {
   }
 
   get browser(): Browser {
-    if (!this._browser) {
-      throw new Error('Browser not started.')
-    }
+    if (!this._browser) throw new Error('Browser not started.')
     return this._browser
   }
 
   async saveSession(filepath: string): Promise<void> {
-    if (!this._context) {
-      throw new Error('No browser context to save')
-    }
+    if (!this._context) throw new Error('No browser context to save')
 
     const storageState = await this._context.storageState()
     const dir = path.dirname(filepath)
@@ -128,23 +124,15 @@ export class BrowserManager {
       throw new Error(`Session file not found: ${filepath}`)
     }
 
-    if (this._context) {
-      await this._context.close()
-    }
-
-    if (!this._browser) {
-      throw new Error('Browser not started')
-    }
-
+    if (this._context) await this._context.close()
+    if (!this._browser) throw new Error('Browser not started')
     this._context = await this._browser.newContext({
       storageState: filepath,
       viewport: this._options.viewport,
       userAgent: this._options.userAgent,
     })
 
-    if (this._page) {
-      await this._page.close()
-    }
+    if (this._page) await this._page.close()
     this._page = await this._context.newPage()
 
     this._isAuthenticated = true
@@ -161,14 +149,7 @@ export class BrowserManager {
       throw new Error('No browser context')
     }
 
-    await this._context.addCookies([
-      {
-        name,
-        value,
-        domain,
-        path: '/',
-      },
-    ])
+    await this._context.addCookies([{ name, value, domain, path: '/' }])
 
     console.debug(`Cookie set: ${name}`)
   }
