@@ -26,7 +26,7 @@ bun install
 ## Quick Start
 
 ```typescript
-import { BrowserManager, PersonScraper, ConsoleCallback } from "mr-linkedin";
+import { BrowserManager, PersonScraper, ConsoleCallback } from "mr-scraper";
 
 const browser = new BrowserManager({ headless: false });
 await browser.start();
