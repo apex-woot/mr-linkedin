@@ -1,6 +1,11 @@
 # LinkedIn Scraper (TypeScript)
 
+> [!WARNING]
+> This project is a TypeScript port of the original [linkedin_scraper](https://github.com/joeyism/linkedin_scraper) by [joeyism](https://github.com/joeyism) using AI. While I will be maintaining and improving this project mostly by myself, I will continue to utilize AI to assist in development and updates.
+
 A high-performance LinkedIn scraper ported from Python to **Bun + TypeScript**, utilizing **Playwright** for browser automation and **Zod** for data validation.
+
+Kudos to the original author for the excellent work on the Python version.
 
 ## Features
 
