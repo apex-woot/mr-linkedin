@@ -1,5 +1,7 @@
+import type { Page } from 'playwright'
 import { z } from 'zod'
-import { BaseScraper } from './base'
+import type { ProgressCallback } from '../callbacks'
+import { navigateAndWait, scrollPageToBottom, waitAndFocus } from './utils'
 
 export const JobSearchParamsSchema = z.object({
   keywords: z.string().optional(),
@@ -9,90 +11,92 @@ export const JobSearchParamsSchema = z.object({
 
 export type JobSearchParams = z.input<typeof JobSearchParamsSchema>
 
-export class JobSearchScraper extends BaseScraper {
-  async search(params: JobSearchParams = {}): Promise<string[]> {
-    const { keywords, location, limit } = JobSearchParamsSchema.parse(params)
+export interface JobSearchOptions {
+  callback?: ProgressCallback
+}
 
-    console.info(
-      `Starting job search: keywords='${keywords || ''}', location='${location || ''}'`,
-    )
+/**
+ * Searches for jobs on LinkedIn and returns job URLs.
+ */
+export async function searchJobs(
+  page: Page,
+  params: JobSearchParams = {},
+  options?: JobSearchOptions,
+): Promise<string[]> {
+  const { keywords, location, limit } = JobSearchParamsSchema.parse(params)
+  const callback = options?.callback
 
-    const searchUrl = this.buildSearchUrl(keywords, location)
-    await this.callback.onStart('JobSearch', searchUrl)
+  console.info(
+    `Starting job search: keywords='${keywords || ''}', location='${location || ''}'`,
+  )
 
-    await this.navigateAndWait(searchUrl)
-    await this.callback.onProgress('Navigated to search results', 20)
+  const searchUrl = buildSearchUrl(keywords, location)
+  await callback?.onStart('JobSearch', searchUrl)
 
-    try {
-      await this.page.waitForSelector('a[href*="/jobs/view/"]', {
-        timeout: 10000,
-      })
-    } catch (_e) {
-      console.warn('No job listings found on page')
-      return []
-    }
+  await navigateAndWait(page, searchUrl, callback)
+  await callback?.onProgress('Navigated to search results', 20)
 
-    await this.waitAndFocus(1)
-    await this.scrollPageToBottom(1, 3)
-    await this.callback.onProgress('Loaded job listings', 50)
-
-    const jobUrls = await this.extractJobUrls(limit)
-    await this.callback.onProgress(`Found ${jobUrls.length} job URLs`, 90)
-
-    await this.callback.onProgress('Search complete', 100)
-    await this.callback.onComplete('JobSearch', jobUrls)
-
-    console.info(`Job search complete: found ${jobUrls.length} jobs`)
-    return jobUrls
+  try {
+    await page.waitForSelector('a[href*="/jobs/view/"]', { timeout: 10000 })
+  } catch {
+    console.warn('No job listings found on page')
+    return []
   }
 
-  protected buildSearchUrl(keywords?: string, location?: string): string {
-    const url = new URL('https://www.linkedin.com/jobs/search/')
+  await waitAndFocus(page, 1)
+  await scrollPageToBottom(page, 1, 3)
+  await callback?.onProgress('Loaded job listings', 50)
 
-    if (keywords) {
-      url.searchParams.set('keywords', keywords)
-    }
-    if (location) {
-      url.searchParams.set('location', location)
-    }
+  const jobUrls = await extractJobUrls(page, limit)
+  await callback?.onProgress(`Found ${jobUrls.length} job URLs`, 90)
 
-    return url.toString()
-  }
+  await callback?.onProgress('Search complete', 100)
+  await callback?.onComplete('JobSearch', jobUrls)
 
-  protected async extractJobUrls(limit: number): Promise<string[]> {
-    const jobUrls: string[] = []
+  console.info(`Job search complete: found ${jobUrls.length} jobs`)
+  return jobUrls
+}
 
-    try {
-      const jobLinks = await this.page.locator('a[href*="/jobs/view/"]').all()
+function buildSearchUrl(keywords?: string, location?: string): string {
+  const url = new URL('https://www.linkedin.com/jobs/search/')
 
-      const seenUrls = new Set<string>()
-      for (const link of jobLinks) {
-        if (jobUrls.length >= limit) {
-          break
-        }
+  if (keywords) url.searchParams.set('keywords', keywords)
 
-        try {
-          const href = await link.getAttribute('href')
-          if (href?.includes('/jobs/view/')) {
-            let cleanUrl = href.split('?')[0]!
+  if (location) url.searchParams.set('location', location)
 
-            if (!cleanUrl.startsWith('http')) {
-              cleanUrl = `https://www.linkedin.com${cleanUrl}`
-            }
+  return url.toString()
+}
 
-            if (!seenUrls.has(cleanUrl)) {
-              jobUrls.push(cleanUrl)
-              seenUrls.add(cleanUrl)
-            }
+async function extractJobUrls(page: Page, limit: number): Promise<string[]> {
+  const jobUrls: string[] = []
+
+  try {
+    const jobLinks = await page.locator('a[href*="/jobs/view/"]').all()
+
+    const seenUrls = new Set<string>()
+    for (const link of jobLinks) {
+      if (jobUrls.length >= limit) break
+
+      try {
+        const href = await link.getAttribute('href')
+        if (href?.includes('/jobs/view/')) {
+          let cleanUrl = href.split('?')[0]!
+
+          if (!cleanUrl.startsWith('http'))
+            cleanUrl = `https://www.linkedin.com${cleanUrl}`
+
+          if (!seenUrls.has(cleanUrl)) {
+            jobUrls.push(cleanUrl)
+            seenUrls.add(cleanUrl)
           }
-        } catch (e) {
-          console.debug(`Error extracting job URL: ${e}`)
         }
+      } catch (e) {
+        console.debug(`Error extracting job URL: ${e}`)
       }
-    } catch (e) {
-      console.warn(`Error extracting job URLs: ${e}`)
     }
-
-    return jobUrls
+  } catch (e) {
+    console.warn(`Error extracting job URLs: ${e}`)
   }
+
+  return jobUrls
 }
