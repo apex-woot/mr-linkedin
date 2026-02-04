@@ -32,7 +32,7 @@ export function createSilentCallback(): ProgressCallback {
 export function createConsoleCallback(verbose: boolean = true): ProgressCallback {
   return {
     onStart: (type: string, url: string) => {
-      console.info(`🚀 Starting ${type} scraping: ${url}`)
+      console.info(`Starting ${type} scraping: ${url}`)
     },
     onProgress: (message: string, percent: number) => {
       if (verbose || percent % 20 === 0) {
@@ -43,7 +43,7 @@ export function createConsoleCallback(verbose: boolean = true): ProgressCallback
       }
     },
     onComplete: (type: string, _data: any) => {
-      console.info(`✅ Completed ${type} scraping successfully!`)
+      console.info(`Completed ${type} scraping successfully`)
     },
     onInfo: (message: string) => {
       console.info(`[Info] ${message}`)
@@ -52,7 +52,7 @@ export function createConsoleCallback(verbose: boolean = true): ProgressCallback
       console.warn(`[Warning] ${message}`)
     },
     onError: (message: string, error?: Error) => {
-      console.error(`❌ Error: ${message}`, error?.message ?? '')
+      console.error(`Error: ${message}`, error?.message ?? '')
     },
   }
 }
