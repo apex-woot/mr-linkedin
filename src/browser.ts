@@ -57,20 +57,14 @@ export class BrowserManager {
 
   async close(): Promise<void> {
     try {
-      if (this._page) {
-        await this._page.close()
-        this._page = null
-      }
+      if (this._page) await this._page.close()
+      this._page = null
 
-      if (this._context) {
-        await this._context.close()
-        this._context = null
-      }
+      if (this._context) await this._context.close()
+      this._context = null
 
-      if (this._browser) {
-        await this._browser.close()
-        this._browser = null
-      }
+      if (this._browser) await this._browser.close()
+      this._browser = null
 
       console.info('Browser closed')
     } catch (e) {
@@ -79,24 +73,20 @@ export class BrowserManager {
   }
 
   async newPage(): Promise<Page> {
-    if (!this._context) {
+    if (!this._context)
       throw new Error('Browser context not initialized. Call start() first.')
-    }
-
     return await this._context.newPage()
   }
 
   get page(): Page {
-    if (!this._page) {
+    if (!this._page)
       throw new Error('Browser not started. Call start() first.')
-    }
     return this._page
   }
 
   get context(): BrowserContext {
-    if (!this._context) {
+    if (!this._context)
       throw new Error('Browser context not initialized.')
-    }
     return this._context
   }
 
@@ -126,6 +116,7 @@ export class BrowserManager {
 
     if (this._context) await this._context.close()
     if (!this._browser) throw new Error('Browser not started')
+
     this._context = await this._browser.newContext({
       storageState: filepath,
       viewport: this._options.viewport,
@@ -134,7 +125,6 @@ export class BrowserManager {
 
     if (this._page) await this._page.close()
     this._page = await this._context.newPage()
-
     this._isAuthenticated = true
 
     console.info(`Session loaded from ${filepath}`)
@@ -145,12 +135,8 @@ export class BrowserManager {
     value: string,
     domain: string = '.linkedin.com',
   ): Promise<void> {
-    if (!this._context) {
-      throw new Error('No browser context')
-    }
-
+    if (!this._context) throw new Error('No browser context')
     await this._context.addCookies([{ name, value, domain, path: '/' }])
-
     console.debug(`Cookie set: ${name}`)
   }
 
