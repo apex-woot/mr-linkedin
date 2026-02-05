@@ -33,10 +33,5 @@ jobs:
       - name: Build package
         run: bun run build
 
-      - name: Set npm registry
-        run: |
-          npm config set //registry.npmjs.org/:_authToken=""
-          npm config set registry https://registry.npmjs.org/
-
       - name: Publish to npm with OIDC
         run: npm publish --provenance --access public
