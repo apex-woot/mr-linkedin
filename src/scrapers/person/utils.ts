@@ -1,4 +1,5 @@
 import type { Locator } from 'playwright'
+import { DATE_PATTERNS, SCRAPING_CONSTANTS } from '../../config/constants'
 
 /**
  * Extracts unique text content from an element's children.
@@ -76,6 +77,16 @@ export function parseDateRange(
       const dateParts = dateRangePart.split(' - ')
       fromDate = dateParts[0]?.trim() ?? null
       toDate = dateParts[1]?.trim() ?? null
+
+      // Normalize "current" keywords to standard "Present"
+      if (toDate) {
+        for (const keyword of DATE_PATTERNS.CURRENT_KEYWORDS) {
+          if (toDate === keyword || toDate.toLowerCase() === keyword.toLowerCase()) {
+            toDate = 'Present'
+            break
+          }
+        }
+      }
     } else {
       // Single date (common in education: "2020")
       const singleDate = dateRangePart.trim()
@@ -148,4 +159,40 @@ export function mapContactHeadingToType(heading: string): string | null {
   if (lower.includes('birthday')) return 'birthday'
   if (lower.includes('address')) return 'address'
   return null
+}
+
+/**
+ * Determines if a text string looks like a date line (with dates, duration, or "Present").
+ * Used to differentiate date lines from location or description text.
+ */
+export function isDateLine(text: string): boolean {
+  const hasDateSeparator = text.includes(DATE_PATTERNS.DATE_RANGE_SEPARATOR)
+  const hasCurrentKeyword = DATE_PATTERNS.CURRENT_KEYWORDS.some((kw) =>
+    text.includes(kw),
+  )
+  const hasDuration = DATE_PATTERNS.DURATION_REGEX.test(text)
+  const hasYear = DATE_PATTERNS.YEAR_REGEX.test(text)
+  return (hasDateSeparator || hasCurrentKeyword) && (hasDuration || hasYear)
+}
+
+/**
+ * Determines if a text string looks like a location (short, no numbers, no duration separator).
+ */
+export function isLocationLike(text: string): boolean {
+  return (
+    text.length < SCRAPING_CONSTANTS.MAX_LOCATION_LENGTH &&
+    !text.includes(DATE_PATTERNS.DURATION_SEPARATOR) &&
+    !/\d/.test(text) &&
+    text.split(/\s+/).length <= SCRAPING_CONSTANTS.MAX_LOCATION_WORD_COUNT
+  )
+}
+
+/**
+ * Determines if a text string looks like a description (long text with many words).
+ */
+export function isDescriptionLike(text: string): boolean {
+  return (
+    text.split(/\s+/).length > SCRAPING_CONSTANTS.MIN_DESCRIPTION_WORD_COUNT ||
+    text.length > SCRAPING_CONSTANTS.MIN_DESCRIPTION_LENGTH
+  )
 }
