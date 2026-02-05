@@ -1,5 +1,8 @@
 import type { Locator, Page } from 'playwright'
 import type { Patent } from '../../models/person'
+import { SCRAPING_CONSTANTS } from '../../config/constants'
+import { PATENT_ITEM_SELECTORS } from '../../config/selectors'
+import { log } from '../../utils/logger'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
   navigateAndWait,
@@ -7,6 +10,70 @@ import {
   scrollPageToHalf,
   waitAndFocus,
 } from '../utils'
+import { deduplicateItems, parseItems } from './common-patterns'
+
+/**
+ * Represents a link candidate for patent URL extraction
+ */
+interface LinkCandidate {
+  href: string
+  text: string | null
+}
+
+/**
+ * Extracts patent URL from an item using functional pipeline approach.
+ * Filters links to find patent-specific URLs and decodes LinkedIn redirects.
+ */
+async function extractPatentUrl(item: Locator): Promise<string | undefined> {
+  const links = await item.locator('a').all()
+
+  const candidates: LinkCandidate[] = await Promise.all(
+    links.map(async (link) => ({
+      href: (await link.getAttribute('href')) ?? '',
+      text: await link.textContent(),
+    })),
+  )
+
+  return candidates
+    .filter(isValidLink)
+    .filter(isPatentSpecific)
+    .map((c) => c.href)
+    .map(decodeLinkedInRedirect)
+    .at(0) // First match or undefined
+}
+
+/**
+ * Validates that a link is usable (not anchor or void link)
+ */
+function isValidLink({ href }: LinkCandidate): boolean {
+  return !!href && !href.includes('#') && !href.includes('void(0)')
+}
+
+/**
+ * Determines if a link is patent-specific based on text or URL content
+ */
+function isPatentSpecific({ href, text }: LinkCandidate): boolean {
+  return (
+    text?.toLowerCase().includes('show patent') || href.includes('patent')
+  )
+}
+
+/**
+ * Decodes LinkedIn redirect URLs to extract the actual target URL.
+ * Falls back to original URL if decoding fails.
+ */
+function decodeLinkedInRedirect(url: string): string {
+  if (!url.includes('linkedin.com/redir/redirect')) return url
+
+  const match = url.match(/url=([^&]+)/)
+  if (!match?.[1]) return url
+
+  try {
+    return decodeURIComponent(match[1])
+  } catch {
+    return url // Decoding failed, keep original
+  }
+}
 
 export async function getPatents(
   page: Page,
@@ -29,15 +96,10 @@ export async function getPatents(
 
       if ((await patentsSection.count()) > 0) {
         const items = await patentsSection.locator('ul > li, ol > li').all()
-
-        for (const item of items) {
-          try {
-            const patent = await parseMainPagePatent(item)
-            if (patent) patents.push(patent)
-          } catch (e) {
-            console.debug(`Error parsing patent from main page: ${e}`)
-          }
-        }
+        const parsed = await parseItems(items, parseMainPagePatent, {
+          itemType: 'patent from main page',
+        })
+        patents.push(...parsed)
       }
     }
 
@@ -66,78 +128,30 @@ export async function getPatents(
       }
 
       await page.waitForSelector('main', { timeout: 10000 })
-      await waitAndFocus(page, 2)
+      await waitAndFocus(page, SCRAPING_CONSTANTS.PATENTS_FOCUS_WAIT)
       await scrollPageToHalf(page)
-
-      // Use a custom scroll for patents to ensure all lazy items load
-      // The standard scrollToBottom might bail out too early if height doesn't change immediately
-      await scrollPageToBottom(page, 2.0, 10)
-
-      const itemsResult = await trySelectorsForAll(
+      await scrollPageToBottom(
         page,
-        {
-          primary: [
-            {
-              // Matches the structure: Item (div) > Inner (div) > Text (p)
-              // :not(:has(> p)) ensures we select the outer Item wrapper (which has no direct p children),
-              // and NOT the inner wrapper (which has direct p children like Title/Subtitle).
-              // This prevents duplication.
-              selector:
-                '[data-view-name="profile-patents-details-view"] div:has(> div > p):not(:has(> p))',
-              description: 'Patents items by structure',
-            },
-            {
-              // Fallback for card-based structure if the above fails but we can find the card
-              selector:
-                '[componentkey^="com.linkedin.sdui.profile.card"] ul > li',
-              description: 'Patents items by list in card',
-            },
-          ],
-          fallback: [
-            {
-              selector: '.pvs-list__container .pvs-list__paged-list-item',
-              description: 'Standard list items',
-            },
-            {
-              selector: 'li.artdeco-list__item',
-              description: 'Artdeco list items',
-            },
-          ],
-        },
-        0,
+        SCRAPING_CONSTANTS.PATENTS_SCROLL_PAUSE,
+        SCRAPING_CONSTANTS.PATENTS_MAX_SCROLLS,
       )
 
-      console.debug(
+      const itemsResult = await trySelectorsForAll(page, PATENT_ITEM_SELECTORS, 0)
+
+      log.debug(
         `Found ${itemsResult.value.length} patent items using: ${itemsResult.usedSelector}`,
       )
 
-      for (const item of itemsResult.value) {
-        try {
-          const patent = await parsePatentItem(item)
-          if (patent) patents.push(patent)
-        } catch (e) {
-          console.debug(`Error parsing patent item: ${e}`)
-        }
-      }
+      const parsed = await parseItems(itemsResult.value, parsePatentItem, {
+        itemType: 'patent item',
+      })
+      patents.push(...parsed)
     }
   } catch (e) {
-    console.warn(`Error getting patents: ${e}`)
+    log.warning(`Error getting patents: ${e}`)
   }
 
-  // Deduplicate patents based on title and number
-  const uniquePatents: Patent[] = []
-  const seen = new Set<string>()
-
-  for (const patent of patents) {
-    // Create a unique key for the patent
-    const key = `${patent.title}|${patent.number || ''}`
-    if (!seen.has(key)) {
-      seen.add(key)
-      uniquePatents.push(patent)
-    }
-  }
-
-  return uniquePatents
+  return deduplicateItems(patents, (p) => `${p.title}|${p.number || ''}`)
 }
 
 async function parseMainPagePatent(item: Locator): Promise<Patent | null> {
@@ -240,34 +254,8 @@ async function parsePatentItem(item: Locator): Promise<Patent | null> {
       }
     }
 
-    // Attempt to find a URL
-    // ... (rest of the URL logic)
-    const links = await item.locator('a').all()
-    let url: string | undefined
-    for (const link of links) {
-      const href = await link.getAttribute('href')
-      const text = await link.textContent()
-      if (href && !href.includes('#') && !href.includes('void(0)')) {
-        if (
-          text?.toLowerCase().includes('show patent') ||
-          href.includes('patent')
-        ) {
-          url = href
-          // Handle LinkedIn redirect if present
-          if (url.includes('linkedin.com/redir/redirect')) {
-            const match = url.match(/url=([^&]+)/)
-            if (match?.[1]) {
-              try {
-                url = decodeURIComponent(match[1])
-              } catch (_e) {
-                // keep original
-              }
-            }
-          }
-          break
-        }
-      }
-    }
+    // Extract patent URL using functional pipeline
+    const url = await extractPatentUrl(item)
 
     return {
       title,
@@ -278,7 +266,7 @@ async function parsePatentItem(item: Locator): Promise<Patent | null> {
       description,
     }
   } catch (e) {
-    console.debug(`Error parsing patent item: ${e}`)
+    log.debug(`Error parsing patent item: ${e}`)
     return null
   }
 }
