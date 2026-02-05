@@ -181,6 +181,51 @@ export const ACCOMPLISHMENT_SELECTORS: SelectorGroup = {
 }
 
 /**
+ * Experience item selectors (for individual experience entries)
+ */
+export const EXPERIENCE_ITEM_SELECTORS: SelectorGroup = {
+  primary: [
+    {
+      selector: '[componentkey^="entity-collection-item"]',
+      description: 'Modern experience items by componentkey',
+    },
+  ],
+  fallback: [
+    {
+      selector: '.pvs-list__container .pvs-list__paged-list-item',
+      description: 'Legacy list items',
+    },
+  ],
+}
+
+/**
+ * Patent item selectors
+ */
+export const PATENT_ITEM_SELECTORS: SelectorGroup = {
+  primary: [
+    {
+      selector:
+        '[data-view-name="profile-patents-details-view"] div:has(> div > p):not(:has(> p))',
+      description: 'Patents items by structure',
+    },
+    {
+      selector: '[componentkey^="com.linkedin.sdui.profile.card"] ul > li',
+      description: 'Patents items by list in card',
+    },
+  ],
+  fallback: [
+    {
+      selector: '.pvs-list__container .pvs-list__paged-list-item',
+      description: 'Standard list items',
+    },
+    {
+      selector: 'li.artdeco-list__item',
+      description: 'Artdeco list items',
+    },
+  ],
+}
+
+/**
  * Data attribute selectors for profile cards
  */
 export const PROFILE_CARD_DATA_ATTRIBUTES = {
