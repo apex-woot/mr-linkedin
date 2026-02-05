@@ -147,6 +147,7 @@ export async function scrollToBottom(
   pauseTime: number = 1.0,
   maxScrolls: number = 10,
 ): Promise<void> {
+  const cappedMaxScrolls = Math.min(maxScrolls, 10)
   const viewport = page.viewportSize()
   if (viewport) {
     await page.mouse.move(viewport.width / 2, viewport.height / 2)
@@ -155,7 +156,7 @@ export async function scrollToBottom(
   let stableCount = 0
   const stabilityThreshold = 3
 
-  for (let i = 0; i < maxScrolls; i++) {
+  for (let i = 0; i < cappedMaxScrolls; i++) {
     const scrollStats = await page.evaluate(() => {
       function findScrollableElement(): Element | Window {
         if (
@@ -209,13 +210,51 @@ export async function scrollToBottom(
     await new Promise((resolve) => setTimeout(resolve, pauseTime * 1000))
 
     const newStats = await page.evaluate(() => {
+      function findScrollableElement(): Element | Window {
+        if (
+          document.documentElement.scrollHeight > window.innerHeight ||
+          document.body.scrollHeight > window.innerHeight
+        ) {
+          return window
+        }
+
+        const allElements = Array.from(document.querySelectorAll('*'))
+        let bestCandidate: Element | null = null
+        let maxScrollHeight = 0
+
+        for (const el of allElements) {
+          const style = window.getComputedStyle(el)
+          if (
+            (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+            el.scrollHeight > el.clientHeight
+          ) {
+            if (el.scrollHeight > maxScrollHeight) {
+              maxScrollHeight = el.scrollHeight
+              bestCandidate = el
+            }
+          }
+        }
+
+        return bestCandidate || window
+      }
+
+      const target = findScrollableElement()
+      const isWindow = target === window
+
       return {
-        scrollHeight: document.documentElement.scrollHeight,
+        scrollHeight: isWindow
+          ? document.documentElement.scrollHeight
+          : (target as Element).scrollHeight,
+        scrollTop: isWindow ? window.scrollY : (target as Element).scrollTop,
       }
     })
 
     const heightDidNotChange =
       newStats.scrollHeight === scrollStats.scrollHeight
+
+    console.info(
+      `Scroll ${i + 1}/${cappedMaxScrolls}: Position=${Math.round(newStats.scrollTop)}, Total Height=${newStats.scrollHeight}`,
+    )
 
     if (heightDidNotChange) {
       stableCount++
@@ -227,15 +266,11 @@ export async function scrollToBottom(
     }
 
     if (stableCount >= stabilityThreshold) {
-      console.debug(
+      console.info(
         `Reached end of page (height stable for ${stabilityThreshold} checks).`,
       )
       break
     }
-
-    console.debug(
-      `Scroll ${i + 1}/${maxScrolls}: Height=${scrollStats.scrollHeight}, Target=${scrollStats.tagName}`,
-    )
   }
 }
 

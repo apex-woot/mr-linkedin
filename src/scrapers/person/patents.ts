@@ -1,5 +1,4 @@
 import type { Locator, Page } from 'playwright'
-import type { Patent } from '../../models'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
   navigateAndWait,
@@ -7,7 +6,6 @@ import {
   scrollPageToHalf,
   waitAndFocus,
 } from '../utils'
-import { extractUniqueTextsFromElement } from './utils'
 
 export async function getPatents(
   page: Page,
@@ -53,7 +51,7 @@ export async function getPatents(
 
       try {
         await navigateAndWait(page, patentsUrl)
-      } catch (e) {
+      } catch (_e) {
         // If navigation fails (e.g. 404), it might mean no patents section exists
         return patents
       }
@@ -70,9 +68,9 @@ export async function getPatents(
       await waitAndFocus(page, 2)
       await scrollPageToHalf(page)
 
-      // Use a custom aggressive scroll for patents to ensure all lazy items load
+      // Use a custom scroll for patents to ensure all lazy items load
       // The standard scrollToBottom might bail out too early if height doesn't change immediately
-      await scrollPageToBottom(page, 2.0, 30)
+      await scrollPageToBottom(page, 2.0, 10)
 
       const itemsResult = await trySelectorsForAll(
         page,
@@ -170,7 +168,7 @@ async function parseMainPagePatent(item: Locator): Promise<Patent | null> {
       number,
       issuedDate,
     }
-  } catch (e) {
+  } catch (_e) {
     return null
   }
 }
@@ -257,10 +255,10 @@ async function parsePatentItem(item: Locator): Promise<Patent | null> {
           // Handle LinkedIn redirect if present
           if (url.includes('linkedin.com/redir/redirect')) {
             const match = url.match(/url=([^&]+)/)
-            if (match && match[1]) {
+            if (match?.[1]) {
               try {
                 url = decodeURIComponent(match[1])
-              } catch (e) {
+              } catch (_e) {
                 // keep original
               }
             }
@@ -324,7 +322,7 @@ function parsePatentSubtitle(subtitle: string): {
         issuedDate = datePart
       }
     }
-  } catch (e) {
+  } catch (_e) {
     // ignore parsing errors
   }
 

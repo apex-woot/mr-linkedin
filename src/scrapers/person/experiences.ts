@@ -1,5 +1,5 @@
 import type { Locator, Page } from 'playwright'
-import type { Experience, Position } from '../../models'
+import type { Experience } from '../../models'
 import { trySelectorsForAll } from '../../utils/selector-utils'
 import {
   navigateAndWait,
@@ -692,8 +692,8 @@ async function parseExperienceItemLegacy(
 
 async function parseNestedExperience(
   item: Locator,
-  companyUrl: string,
-  companyName: string,
+  _companyUrl: string,
+  _companyName: string,
 ): Promise<Position[]> {
   const positions: Position[] = []
 
