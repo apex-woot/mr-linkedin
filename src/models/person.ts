@@ -16,15 +16,22 @@ export const ContactSchema = z.object({
 
 export type Contact = z.infer<typeof ContactSchema>
 
-export const ExperienceSchema = z.object({
-  positionTitle: z.string().optional(),
-  institutionName: z.string().optional(),
-  linkedinUrl: z.string().optional(),
+export const PositionSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
   duration: z.string().optional(),
   location: z.string().optional(),
-  description: z.string().optional(),
+  employmentType: z.string().optional(),
+})
+
+export type Position = z.infer<typeof PositionSchema>
+
+export const ExperienceSchema = z.object({
+  company: z.string().optional(),
+  companyUrl: z.string().optional(),
+  positions: z.array(PositionSchema).default([]),
 })
 
 export type Experience = z.infer<typeof ExperienceSchema>
@@ -52,6 +59,17 @@ export const AccomplishmentSchema = z.object({
 
 export type Accomplishment = z.infer<typeof AccomplishmentSchema>
 
+export const PatentSchema = z.object({
+  title: z.string(),
+  issuer: z.string().optional(),
+  number: z.string().optional(),
+  issuedDate: z.string().optional(),
+  url: z.string().optional(),
+  description: z.string().optional(),
+})
+
+export type Patent = z.infer<typeof PatentSchema>
+
 export const PersonSchema = z.object({
   linkedinUrl: z.string().refine((url) => url.includes('linkedin.com/in/'), {
     message: 'Must be a valid LinkedIn profile URL (contains /in/)',
@@ -62,6 +80,7 @@ export const PersonSchema = z.object({
   openToWork: z.boolean().default(false),
   experiences: z.array(ExperienceSchema).default([]),
   educations: z.array(EducationSchema).default([]),
+  patents: z.array(PatentSchema).default([]),
   interests: z.array(InterestSchema).default([]),
   accomplishments: z.array(AccomplishmentSchema).default([]),
   contacts: z.array(ContactSchema).default([]),
@@ -84,7 +103,7 @@ export function createPerson(data: PersonData): PersonData {
  * @returns Company name or undefined if no experiences
  */
 export function getPersonCompany(person: PersonData): string | undefined {
-  return person.experiences[0]?.institutionName
+  return person.experiences[0]?.company
 }
 
 /**
@@ -93,7 +112,7 @@ export function getPersonCompany(person: PersonData): string | undefined {
  * @returns Job title or undefined if no experiences
  */
 export function getPersonJobTitle(person: PersonData): string | undefined {
-  return person.experiences[0]?.positionTitle
+  return person.experiences[0]?.positions[0]?.title
 }
 
 /**
@@ -108,6 +127,7 @@ export function personToString(person: PersonData): string {
     `  Title: ${getPersonJobTitle(person)}\n` +
     `  Location: ${person.location}\n` +
     `  Experiences: ${person.experiences.length}\n` +
-    `  Education: ${person.educations.length}>`
+    `  Education: ${person.educations.length}\n` +
+    `  Patents: ${person.patents.length}>`
   )
 }

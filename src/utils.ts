@@ -138,22 +138,105 @@ export async function extractTextSafe(
   }
 }
 
+/**
+ * Dynamically scrolls to the bottom of the page or a scrollable container.
+ * Stops when the height remains stable for 3 consecutive checks.
+ * Hard cutoff at 10 scrolls.
+ */
 export async function scrollToBottom(
   page: Page,
   pauseTime: number = 1.0,
   maxScrolls: number = 10,
 ): Promise<void> {
-  for (let i = 0; i < maxScrolls; i++) {
-    const previousHeight = await page.evaluate(() => document.body.scrollHeight)
+  const viewport = page.viewportSize()
+  if (viewport) {
+    await page.mouse.move(viewport.width / 2, viewport.height / 2)
+  }
 
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
+  let stableCount = 0
+  const stabilityThreshold = 3
+
+  for (let i = 0; i < maxScrolls; i++) {
+    const scrollStats = await page.evaluate(() => {
+      function findScrollableElement(): Element | Window {
+        if (
+          document.documentElement.scrollHeight > window.innerHeight ||
+          document.body.scrollHeight > window.innerHeight
+        ) {
+          return window
+        }
+
+        const allElements = Array.from(document.querySelectorAll('*'))
+        let bestCandidate: Element | null = null
+        let maxScrollHeight = 0
+
+        for (const el of allElements) {
+          const style = window.getComputedStyle(el)
+          if (
+            (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
+            el.scrollHeight > el.clientHeight
+          ) {
+            if (el.scrollHeight > maxScrollHeight) {
+              maxScrollHeight = el.scrollHeight
+              bestCandidate = el
+            }
+          }
+        }
+
+        return bestCandidate || window
+      }
+
+      const target = findScrollableElement()
+      const isWindow = target === window
+
+      const currentScrollHeight = isWindow
+        ? document.documentElement.scrollHeight
+        : (target as Element).scrollHeight
+
+      if (isWindow) {
+        window.scrollTo(0, document.documentElement.scrollHeight)
+      } else {
+        const el = target as Element
+        el.scrollTop = el.scrollHeight
+      }
+
+      return {
+        scrollHeight: currentScrollHeight,
+        tagName: isWindow ? 'WINDOW' : (target as Element).tagName,
+      }
+    })
+
+    await page.mouse.wheel(0, 3000)
     await new Promise((resolve) => setTimeout(resolve, pauseTime * 1000))
 
-    const newHeight = await page.evaluate(() => document.body.scrollHeight)
-    if (newHeight === previousHeight) {
-      console.debug(`Reached bottom after ${i + 1} scrolls`)
+    const newStats = await page.evaluate(() => {
+      return {
+        scrollHeight: document.documentElement.scrollHeight,
+      }
+    })
+
+    const heightDidNotChange =
+      newStats.scrollHeight === scrollStats.scrollHeight
+
+    if (heightDidNotChange) {
+      stableCount++
+      console.debug(
+        `Height stable (${newStats.scrollHeight}). Stability check: ${stableCount}/${stabilityThreshold}`,
+      )
+    } else {
+      stableCount = 0
+    }
+
+    if (stableCount >= stabilityThreshold) {
+      console.debug(
+        `Reached end of page (height stable for ${stabilityThreshold} checks).`,
+      )
       break
     }
+
+    console.debug(
+      `Scroll ${i + 1}/${maxScrolls}: Height=${scrollStats.scrollHeight}, Target=${scrollStats.tagName}`,
+    )
   }
 }
 

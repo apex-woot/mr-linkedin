@@ -16,10 +16,20 @@ async function runExample() {
   )
   const linkedinUrl = inputUrl || defaultUrl
 
+  const outputChoice = prompt(
+    'How would you like to save the output?\n  1. Save to JSON file (default)\n  2. Print all to console\nEnter choice (1 or 2):',
+    '1',
+  )
+  const shouldSaveToFile = outputChoice !== '2'
+
   const isHeadless = process.argv.includes('--headless')
+  const onlyExperience = process.argv.includes('--only-experience')
 
   console.log(`\nStarting example scraper for: ${linkedinUrl}`)
   console.log(`Mode: ${isHeadless ? 'Headless' : 'Headed (Browser Visible)'}`)
+  if (onlyExperience) {
+    console.log('Scraping: Experience and Patents')
+  }
 
   const browser = new BrowserManager({
     headless: isHeadless,
@@ -43,21 +53,45 @@ async function runExample() {
 
     const profile = await scrapePerson(browser.page, linkedinUrl, {
       callback: createConsoleCallback(true),
+      sections: onlyExperience
+        ? {
+            about: false,
+            experiences: true,
+            patents: true,
+            educations: false,
+            interests: false,
+            accomplishments: false,
+            contacts: false,
+          }
+        : undefined,
     })
 
     console.log(`\n${'='.repeat(50)}`)
     console.log('SCRAPE RESULTS:')
     console.log('='.repeat(50))
-    console.log(`Name:     ${profile.name}`)
-    console.log(`Location: ${profile.location}`)
-    console.log(`About:    ${profile.about?.substring(0, 100)}...`)
-    console.log(`Experience Count: ${profile.experiences.length}`)
-    console.log(`Education Count:  ${profile.educations.length}`)
 
-    if (profile.experiences.length > 0) {
-      console.log('\nLatest Experience:')
-      const latest = profile.experiences[0]
-      console.log(`- ${latest?.positionTitle} at ${latest?.institutionName}`)
+    if (shouldSaveToFile) {
+      // Save to JSON file
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `profile_${profile.name?.replace(/\s+/g, '_') || 'unknown'}_${timestamp}.json`
+      await Bun.write(filename, JSON.stringify(profile, null, 2))
+      console.log(`\n✓ Profile data saved to: ${filename}`)
+      console.log(`\nQuick Summary:`)
+      console.log(`Name:     ${profile.name}`)
+      console.log(`Location: ${profile.location}`)
+      console.log(`About:    ${profile.about?.substring(0, 100)}...`)
+      console.log(`Experience Count: ${profile.experiences.length}`)
+      console.log(`Education Count:  ${profile.educations.length}`)
+      console.log(`Patents Count:    ${profile.patents.length}`)
+      if (profile.experiences.length > 0) {
+        console.log('\nLatest Experience:')
+        const latest = profile.experiences[0]
+        const latestPosition = latest?.positions[0]
+        console.log(`- ${latestPosition?.title} at ${latest?.company}`)
+      }
+    } else {
+      // Print all to console
+      console.log(JSON.stringify(profile, null, 2))
     }
     console.log(`${'='.repeat(50)}\n`)
   } catch (error) {
