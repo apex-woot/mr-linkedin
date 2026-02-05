@@ -40,6 +40,7 @@ await browser.close();
 - **Extensible:** Custom callbacks for real-time progress tracking (JSON, Multi, Console).
 
 ### 🚀 Improved Robustness
+
 | Feature | Python Version | This Version |
 | :--- | :---: | :---: |
 | **Experience** | Basic | **Robust & Detailed** |
@@ -70,6 +71,7 @@ run build      # Build dist
 ```
 
 ## Roadmap / TODO
+
 - [x] High-performance Bun + Playwright core
 - [x] Robust Experience & Patent extraction
 - [ ] Robust extraction of other sections (Education, Publications, Skills, Interests, etc.)
@@ -82,4 +84,4 @@ run build      # Build dist
 
 *Disclaimer: This tool is for educational purposes only. Users are responsible for complying with LinkedIn's Terms of Service.*
 
-<small>TypeScript port of [linkedin_scraper](https://github.com/joeyism/linkedin_scraper) by [joeyism](https://github.com/joeyism).</small>
+<small>TypeScript port of [linkedin_scraper](https://github.com/joeyism/linkedin_scraper) by [joeyism](https://github.com/joeyism) done mostly by AI.</small>
