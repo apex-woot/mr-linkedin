@@ -1,6 +1,6 @@
 {
   "name": "@apexwoot/mr-scraper",
-  "version": "1.0.22",
+  "version": "1.0.23",
   "description": "TypeScript library for scraping LinkedIn profiles, companies, and job listings using Playwright",
   "type": "module",
   "main": "./dist/node/index.js",
