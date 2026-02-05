@@ -7,7 +7,7 @@ import {
   scrollPageToHalf,
   waitAndFocus,
 } from '../utils'
-import { extractUniqueTextsFromElement, parseEducationTimes } from './utils'
+import { extractUniqueTextsFromElement, parseDateRange } from './utils'
 
 export async function getEducations(
   page: Page,
@@ -116,7 +116,7 @@ async function parseMainPageEducation(
       else degree = second
     }
 
-    const { fromDate, toDate } = parseEducationTimes(times)
+    const { fromDate, toDate } = parseDateRange(times)
 
     return {
       institutionName,
@@ -137,7 +137,9 @@ async function parseEducationItem(item: Locator): Promise<Education | null> {
     if (links.length >= 1) {
       const institutionUrl = (await links[0]?.getAttribute('href')) ?? undefined
 
-      const detailLink = links.length >= 2 ? links[1]! : links[0]!
+      const detailLink = links.length >= 2 ? links[1] : links[0]
+      if (!detailLink) return null
+
       const generics = await detailLink.locator('generic, span, div').all()
       const texts: string[] = []
       for (const g of generics) {
@@ -148,20 +150,20 @@ async function parseEducationItem(item: Locator): Promise<Education | null> {
       const uniqueTexts = Array.from(new Set(texts))
 
       if (uniqueTexts.length > 0) {
-        const institutionName = uniqueTexts[0]!
+        const institutionName = uniqueTexts[0] ?? ''
         let degree: string | null = null
         let times = ''
 
         if (uniqueTexts.length === 3) {
-          degree = uniqueTexts[1]!
-          times = uniqueTexts[2]!
+          degree = uniqueTexts[1] ?? null
+          times = uniqueTexts[2] ?? ''
         } else if (uniqueTexts.length === 2) {
-          const second = uniqueTexts[1]!
+          const second = uniqueTexts[1] ?? ''
           if (second.includes(' - ') || /\d/.test(second)) times = second
           else degree = second
         }
 
-        const { fromDate, toDate } = parseEducationTimes(times)
+        const { fromDate, toDate } = parseDateRange(times)
 
         return {
           institutionName,
@@ -232,7 +234,7 @@ async function parseEducationItem(item: Locator): Promise<Education | null> {
       times = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
     }
 
-    const { fromDate, toDate } = parseEducationTimes(times)
+    const { fromDate, toDate } = parseDateRange(times)
 
     let description = ''
     if (detailChildren.length > 1)

@@ -31,7 +31,10 @@ export const NAME_SELECTORS: SelectorGroup = {
   ],
   fallback: [
     { selector: 'h1', description: 'Old H1 name (pre-2025)' },
-    { selector: '[data-view-name*="profile-top-card"] h2', description: 'Top card H2' },
+    {
+      selector: '[data-view-name*="profile-top-card"] h2',
+      description: 'Top card H2',
+    },
   ],
 }
 
@@ -41,7 +44,10 @@ export const NAME_SELECTORS: SelectorGroup = {
 export const LOCATION_SELECTORS: SelectorGroup = {
   primary: [
     { selector: '.text-body-small', description: 'Generic small text' },
-    { selector: 'main p.ddde811d._19ee2a11', description: 'New location class' },
+    {
+      selector: 'main p.ddde811d._19ee2a11',
+      description: 'New location class',
+    },
   ],
   fallback: [
     {
@@ -71,7 +77,10 @@ export const ABOUT_SELECTORS: SelectorGroup = {
       selector: '[data-view-name="profile-card"]',
       description: 'Generic profile card',
     },
-    { selector: 'span[aria-hidden="true"]', description: 'Old aria-hidden span' },
+    {
+      selector: 'span[aria-hidden="true"]',
+      description: 'Old aria-hidden span',
+    },
   ],
 }
 
@@ -80,7 +89,10 @@ export const ABOUT_SELECTORS: SelectorGroup = {
  */
 export const EXPERIENCE_SELECTORS: SelectorGroup = {
   primary: [
-    { selector: 'h2:has-text("Experience")', description: 'Experience heading' },
+    {
+      selector: 'h2:has-text("Experience")',
+      description: 'Experience heading',
+    },
     {
       selector: '[data-view-name="profile-card-experience"]',
       description: 'Experience card',
@@ -116,7 +128,10 @@ export const EDUCATION_SELECTORS: SelectorGroup = {
  */
 export const PROFILE_PICTURE_SELECTORS: SelectorGroup = {
   primary: [
-    { selector: '.pv-top-card-profile-picture img', description: 'Profile image' },
+    {
+      selector: '.pv-top-card-profile-picture img',
+      description: 'Profile image',
+    },
   ],
   fallback: [
     { selector: 'img[alt*="profile picture"]', description: 'Alt text search' },
@@ -131,9 +146,7 @@ export const CONTACT_SELECTORS: SelectorGroup = {
     { selector: 'dialog', description: 'Native dialog element' },
     { selector: '[role="dialog"]', description: 'ARIA dialog' },
   ],
-  fallback: [
-    { selector: '.artdeco-modal', description: 'Old modal class' },
-  ],
+  fallback: [{ selector: '.artdeco-modal', description: 'Old modal class' }],
 }
 
 /**

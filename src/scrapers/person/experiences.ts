@@ -7,7 +7,7 @@ import {
   scrollPageToHalf,
   waitAndFocus,
 } from '../utils'
-import { extractUniqueTextsFromElement, parseWorkTimes } from './utils'
+import { parseDateRange } from './utils'
 
 export async function getExperiences(
   page: Page,
@@ -106,475 +106,262 @@ export async function getExperiences(
   return experiences
 }
 
-export async function parseMainPageExperience(
-  item: Locator,
-): Promise<Experience | null> {
-  try {
-    // Get the first <a> element which contains the main info
-    const firstLink = item.locator('a').first()
-    if ((await firstLink.count()) === 0) return null
+interface ParsedLinks {
+  companyUrl?: string
+  contentLink: Locator
+}
 
-    const companyUrl = (await firstLink.getAttribute('href')) ?? undefined
+async function extractLinks(item: Locator): Promise<ParsedLinks | null> {
+  const allLinks = await item.locator('a').all()
+  if (allLinks.length < 2) return null
 
-    // Get all <p> tags within the first <a>
-    const pTags = await firstLink.locator('p').all()
-    if (pTags.length < 2) {
-      // Fallback to old parsing method
-      return await parseMainPageExperienceLegacy(item)
-    }
+  const contentLink = allLinks[1]
+  if (!contentLink) return null
 
-    const firstP = await pTags[0]?.textContent()
-    const secondP = await pTags[1]?.textContent()
-
-    if (!firstP || !secondP) {
-      return await parseMainPageExperienceLegacy(item)
-    }
-
-    // Detect pattern by checking the second <p> tag
-    const isPattern1 = secondP.includes(' · ')
-
-    if (isPattern1) {
-      // Pattern 1: Single position
-      const positionTitle = firstP.trim()
-      const parts = secondP.split(' · ')
-      const companyName = parts[0]?.trim() ?? ''
-      const employmentType = parts[1]?.trim() ?? ''
-
-      // Get dates from third <p> (could be inside or outside the link)
-      let workTimes = ''
-      if (pTags.length >= 3) {
-        workTimes = (await pTags[2]?.textContent())?.trim() ?? ''
-      }
-
-      // If no dates found inside link, look outside
-      if (!workTimes) {
-        const allPTagsInItem = await item.locator('p').all()
-        for (const pTag of allPTagsInItem) {
-          const isInsideLink =
-            (await pTag.locator('xpath=ancestor::a').count()) > 0
-          if (isInsideLink) continue
-
-          const text = (await pTag.textContent())?.trim()
-          if (
-            text &&
-            (text.includes(' - ') ||
-              text.includes('Present') ||
-              /\d+\s+(yr|yrs|mo|mos)/.test(text))
-          ) {
-            workTimes = text
-            break
-          }
-        }
-      }
-
-      const { fromDate, toDate, duration } = parseWorkTimes(workTimes)
-
-      return {
-        company: companyName,
-        companyUrl: companyUrl,
-        positions: [
-          {
-            title: positionTitle,
-            employmentType: employmentType || undefined,
-            fromDate: fromDate ?? undefined,
-            toDate: toDate ?? undefined,
-            duration: duration ?? undefined,
-          },
-        ],
-      }
-    }
-
-    // If not Pattern 1, fallback to legacy parsing
-    return await parseMainPageExperienceLegacy(item)
-  } catch (e) {
-    console.debug(`Error parsing main page experience: ${e}`)
-    return null
+  return {
+    companyUrl: (await allLinks[0]?.getAttribute('href')) ?? undefined,
+    contentLink,
   }
 }
 
-// Legacy parsing for main page experience
-async function parseMainPageExperienceLegacy(
+interface ItemMetadata {
+  firstP: string
+  secondP: string
+  hasNestedUl: boolean
+}
+
+async function getItemMetadata(
   item: Locator,
-): Promise<Experience | null> {
-  try {
-    const links = await item.locator('a').all()
-    if (links.length < 2) return null
+  contentLink: Locator,
+): Promise<ItemMetadata | null> {
+  const pTags = await contentLink.locator('p').all()
+  if (pTags.length < 2) return null
 
-    const companyUrl = (await links[0]?.getAttribute('href')) ?? undefined
-    const detailLink = links[1]
-    if (!detailLink) return null
+  const firstP = await pTags[0]?.textContent()
+  const secondP = await pTags[1]?.textContent()
 
-    const uniqueTexts = await extractUniqueTextsFromElement(detailLink)
+  if (!firstP || !secondP) return null
 
-    if (uniqueTexts.length < 2) return null
-
-    const positionTitle = uniqueTexts[0] ?? ''
-    const companyName = uniqueTexts[1] ?? ''
-    const workTimes = uniqueTexts[2] ?? ''
-
-    const { fromDate, toDate, duration } = parseWorkTimes(workTimes)
-
-    return {
-      company: companyName,
-      companyUrl: companyUrl,
-      positions: [
-        {
-          title: positionTitle,
-          fromDate: fromDate ?? undefined,
-          toDate: toDate ?? undefined,
-          duration: duration ?? undefined,
-        },
-      ],
-    }
-  } catch (e) {
-    console.debug(`Error parsing main page experience (legacy): ${e}`)
-    return null
+  return {
+    firstP: firstP.trim(),
+    secondP: secondP.trim(),
+    hasNestedUl: (await item.locator('ul').count()) > 0,
   }
+}
+
+interface AdditionalFields {
+  workTimes: string
+  location: string
+  description: string
+}
+
+async function extractAdditionalFields(
+  item: Locator,
+  skipTexts: string[],
+): Promise<AdditionalFields> {
+  let workTimes = ''
+  let location = ''
+  let description = ''
+
+  const allElements = await item
+    .locator('p, ul, [data-testid="expandable-text-box"]')
+    .all()
+
+  for (const element of allElements) {
+    const rawText = (await element.textContent())?.trim()
+    if (!rawText || skipTexts.includes(rawText)) continue
+
+    const innerText = (await element.innerText())?.trim()
+    const text = innerText || rawText
+
+    // Priority 1: Expandable description (highest priority if marked)
+    if ((await element.getAttribute('data-testid')) === 'expandable-text-box') {
+      description = text
+      continue
+    }
+
+    // Priority 2: Date/duration line
+    if (!workTimes && isDateLine(text)) {
+      workTimes = text
+      continue
+    }
+
+    // Priority 3: Location (short, no numbers, after dates)
+    if (!location && workTimes && isLocationLike(text)) {
+      location = text
+      continue
+    }
+
+    // Priority 4: Description (long text fallback)
+    if (!description && isDescriptionLike(text)) {
+      description = text
+    }
+  }
+
+  return { workTimes, location, description }
+}
+
+function isDateLine(text: string): boolean {
+  return (
+    (text.includes(' - ') || text.includes('Present')) &&
+    /\d{4}|\d+\s+(yr|yrs|mo|mos)/.test(text)
+  )
+}
+
+function isLocationLike(text: string): boolean {
+  return (
+    text.length < 100 &&
+    !text.includes('·') &&
+    !/\d/.test(text) &&
+    text.split(/\s+/).length <= 6
+  )
+}
+
+function isDescriptionLike(text: string): boolean {
+  return text.split(/\s+/).length > 6 || text.length > 100
 }
 
 async function parseExperienceItem(item: Locator): Promise<Experience | null> {
   try {
-    // Find all <a> tags in the item
-    const allLinks = await item.locator('a').all()
-    if (allLinks.length < 2) {
-      console.debug(
-        `Only found ${allLinks.length} <a> tags, trying linkless parser`,
-      )
-      return await parseExperienceItemLinkless(item)
+    // 1. Extract links and metadata
+    const links = await extractLinks(item)
+    if (!links) {
+      console.debug('No links found, trying simplified fallback parser')
+      return await parseExperienceItemSimpleFallback(item)
     }
 
-    // First <a> is company logo, second <a> contains the main info
-    const companyUrl = (await allLinks[0]?.getAttribute('href')) ?? undefined
-    const contentLink = allLinks[1]
-    if (!contentLink) return null
-
-    // Get all <p> tags within the content <a>
-    const pTags = await contentLink.locator('p').all()
-    if (pTags.length < 2) {
-      console.debug(`Only found ${pTags.length} <p> tags, trying legacy parser`)
-      return await parseExperienceItemLegacy(item)
+    const metadata = await getItemMetadata(item, links.contentLink)
+    if (!metadata) {
+      console.debug('No metadata found, trying simplified fallback parser')
+      return await parseExperienceItemSimpleFallback(item)
     }
 
-    const firstP = await pTags[0]?.textContent()
-    const secondP = await pTags[1]?.textContent()
+    console.debug(`First <p>: "${metadata.firstP.substring(0, 50)}"`)
+    console.debug(`Second <p>: "${metadata.secondP.substring(0, 50)}"`)
+    console.debug(`Has nested UL: ${metadata.hasNestedUl}`)
 
-    console.debug(`First <p>: "${firstP?.substring(0, 50)}"`)
-    console.debug(`Second <p>: "${secondP?.substring(0, 50)}"`)
-
-    if (!firstP || !secondP) return null
-
-    // Detect pattern by checking the second <p> tag
-    const isPattern1 = secondP.includes(' · ')
-    const isPattern2 =
-      /\d+\s+(yr|yrs|mo|mos)/.test(secondP) && !secondP.includes(' - ')
-
-    console.debug(
-      `Pattern detection - isPattern1: ${isPattern1}, isPattern2: ${isPattern2}`,
-    )
-
-    // Also check if this item has nested <ul> for Pattern 2
-    const hasNestedUl = (await item.locator('ul').count()) > 0
-    if (hasNestedUl) {
-      console.debug(
-        `Found nested <ul>, treating as Pattern 2 (company with multiple positions)`,
-      )
-    }
-
-    if (isPattern1 && !hasNestedUl) {
-      // Pattern 1: Single position
-      // First <p>: Position title
-      // Second <p>: "Company · Type"
-      const positionTitle = firstP.trim()
-      const parts = secondP.split(' · ')
-      const companyName = parts[0]?.trim() ?? ''
-      const employmentType = parts[1]?.trim() ?? ''
-
-      // Get dates and description from tags in the item container
-      let workTimes = ''
-      let description = ''
-
-      // Find all relevant tags in the item container
-      const allElements = await item
-        .locator('p, ul, [data-testid="expandable-text-box"]')
-        .all()
-
-      for (const element of allElements) {
-        const rawText = (await element.textContent())?.trim()
-        if (!rawText) continue
-
-        // Skip the elements we already captured from inside the link
-        // Note: Pattern 1 splits secondP by ' · ', so we check against full secondP
-        if (rawText === firstP || rawText === secondP) continue
-
-        const innerText = (await element.innerText())?.trim()
-        const text = innerText || rawText
-
-        // Check if it's the date/duration line (contains dates or duration)
-        if (
-          (text.includes(' - ') || text.includes('Present')) &&
-          /\d/.test(text)
-        ) {
-          if (!workTimes) workTimes = text
-        }
-        // Check if it's the expandable description or a long text (description fallback)
-        else if (
-          (await element.getAttribute('data-testid')) ===
-            'expandable-text-box' ||
-          text.split(/\s+/).length > 6 ||
-          text.length > 100
-        ) {
-          if (!description) description = text
-        }
-      }
-
-      const { fromDate, toDate, duration } = parseWorkTimes(workTimes)
-
-      return {
-        company: companyName,
-        companyUrl: companyUrl,
-        positions: [
-          {
-            title: positionTitle,
-            employmentType: employmentType || undefined,
-            fromDate: fromDate ?? undefined,
-            toDate: toDate ?? undefined,
-            duration: duration ?? undefined,
-            description: description || undefined,
-          },
-        ],
-      }
-    } else if (hasNestedUl || isPattern2) {
-      // Pattern 2: Multiple positions at same company
-      // First <p>: Company name
-      // Second <p>: Total duration
-      const companyName = firstP.trim()
-      // const totalDuration = secondP.trim() // Not used in new structure unless we add it to ExperienceSchema
-
-      // Look for nested <ul> with positions
-      const nestedUl = item.locator('ul').first()
-      if ((await nestedUl.count()) === 0) {
-        // No nested positions found, return single experience (fallback)
-        return {
-          company: companyName,
-          companyUrl: companyUrl,
-          positions: [],
-        }
-      }
-
-      // Parse nested positions
-      const positions = await parseNestedExperience(
+    // 2. Detect pattern: multiple positions vs single position
+    if (metadata.hasNestedUl) {
+      console.debug('Pattern 2: Multiple positions')
+      return await parseMultiplePositions(
         item,
-        companyUrl ?? '',
-        companyName,
+        links.companyUrl,
+        metadata.firstP,
       )
-      return {
-        company: companyName,
-        companyUrl: companyUrl,
-        positions: positions,
-      }
-    } else {
-      // Pattern 3: Simple single position (no employment type)
-      // First <p>: Position title
-      // Second <p>: Company name (plain text, no · separator)
-      // Additional <p> tags outside the link: dates, location, description
-      console.debug('Trying Pattern 3 (simple single position)')
-
-      const positionTitle = firstP.trim()
-      const companyName = secondP.trim()
-
-      // Get dates, location, and description from <p> tags outside the content link
-      let workTimes = ''
-      let location = ''
-      let description = ''
-
-      // Find all relevant tags in the item container
-      // We look for p, ul (for lists), and expandable text boxes
-      const allElements = await item
-        .locator('p, ul, [data-testid="expandable-text-box"]')
-        .all()
-
-      for (const element of allElements) {
-        const rawText = (await element.textContent())?.trim()
-        if (!rawText) continue
-
-        // Skip the elements we already captured from inside the link
-        if (rawText === firstP || rawText === secondP) continue
-
-        // Use innerText for description to preserve formatting (newlines in lists)
-        const innerText = (await element.innerText())?.trim()
-        const text = innerText || rawText
-
-        // Check if it's the expandable description FIRST (highest priority if marked)
-        if (
-          (await element.getAttribute('data-testid')) === 'expandable-text-box'
-        ) {
-          description = text
-          console.debug(`Found description`)
-        }
-        // Check if it's the date/duration line
-        else if (
-          (text.includes(' - ') || text.includes('Present')) &&
-          /\d{4}|\d+\s+(yr|yrs|mo|mos)/.test(text)
-        ) {
-          if (!workTimes) {
-            workTimes = text
-            console.debug(`Found workTimes: "${text.substring(0, 50)}"`)
-          }
-        }
-        // Check if it's a long text that's likely a description (fallback)
-        else if (text.split(/\s+/).length > 6 || text.length > 100) {
-          if (!description) {
-            description = text
-            console.debug(`Found description (fallback)`)
-          }
-        }
-        // Check if it's a location (usually contains city/state/country names, no dates)
-        else if (
-          text.length < 100 &&
-          !text.includes('·') &&
-          !/\d/.test(text) &&
-          text.split(/\s+/).length <= 6
-        ) {
-          // Only look for location if we found workTimes (location usually follows dates)
-          // And if we haven't found description yet (location usually precedes description)
-          if (!location && !workTimes) {
-            // skip
-          } else if (!location && !description) {
-            location = text
-            console.debug(`Found location: "${text.substring(0, 50)}"`)
-          }
-        }
-      }
-
-      const { fromDate, toDate, duration } = parseWorkTimes(workTimes)
-
-      return {
-        company: companyName,
-        companyUrl: companyUrl,
-        positions: [
-          {
-            title: positionTitle,
-            fromDate: fromDate ?? undefined,
-            toDate: toDate ?? undefined,
-            duration: duration ?? undefined,
-            location: location || undefined,
-            description: description || undefined,
-          },
-        ],
-      }
     }
+
+    // 3. Parse single position (unified Pattern 1/3)
+    console.debug('Pattern 1/3: Single position')
+    return await parseSinglePosition(item, links.companyUrl, metadata)
   } catch (e) {
     console.debug(`Error parsing experience: ${e}`)
     return null
   }
 }
 
-// Parser for experiences without links (no company LinkedIn page)
-async function parseExperienceItemLinkless(
+async function parseMultiplePositions(
+  item: Locator,
+  companyUrl: string | undefined,
+  companyName: string,
+): Promise<Experience> {
+  const positions = await parseNestedExperience(
+    item,
+    companyUrl ?? '',
+    companyName,
+  )
+  return {
+    company: companyName,
+    companyUrl,
+    positions,
+  }
+}
+
+async function parseSinglePosition(
+  item: Locator,
+  companyUrl: string | undefined,
+  metadata: ItemMetadata,
+): Promise<Experience> {
+  const { firstP, secondP } = metadata
+
+  // Check if secondP contains company · type pattern
+  const hasEmploymentType = secondP.includes(' · ')
+
+  let positionTitle: string
+  let companyName: string
+  let employmentType: string | undefined
+
+  if (hasEmploymentType) {
+    // Pattern 1: "Position" / "Company · Type"
+    positionTitle = firstP
+    const parts = secondP.split(' · ')
+    companyName = parts[0]?.trim() ?? ''
+    employmentType = parts[1]?.trim() ?? undefined
+  } else {
+    // Pattern 3: "Position" / "Company"
+    positionTitle = firstP
+    companyName = secondP
+  }
+
+  // Extract additional fields (dates, location, description)
+  const additional = await extractAdditionalFields(item, [firstP, secondP])
+  const { fromDate, toDate, duration } = parseDateRange(additional.workTimes, {
+    includeDuration: true,
+  })
+
+  return {
+    company: companyName,
+    companyUrl,
+    positions: [
+      {
+        title: positionTitle,
+        employmentType,
+        fromDate: fromDate ?? undefined,
+        toDate: toDate ?? undefined,
+        duration: duration ?? undefined,
+        location: additional.location || undefined,
+        description: additional.description || undefined,
+      },
+    ],
+  }
+}
+
+async function parseExperienceItemSimpleFallback(
   item: Locator,
 ): Promise<Experience | null> {
   try {
-    console.debug('Attempting linkless parser')
+    console.debug('Using simplified fallback parser')
 
-    // Collect all <p> tag texts first
+    // Collect all paragraph texts
     const pTags = await item.locator('p').all()
-    const pTexts: Array<{
-      text: string
-      isDate: boolean
-      isDescription: boolean
-      element: Locator
-    }> = []
+    const texts = (
+      await Promise.all(pTags.map(async (p) => (await p.textContent())?.trim()))
+    ).filter((t): t is string => !!t && t.length < 500)
 
-    for (const pTag of pTags) {
-      const text = (await pTag.textContent())?.trim()
-      if (!text || text.length > 500) continue
-
-      const isDate =
-        (text.includes(' - ') || text.includes('·')) &&
-        /\d{4}|\d+\s+(yr|yrs|mo|mos)/.test(text)
-      const isDescription =
-        (await pTag.getAttribute('data-testid')) === 'expandable-text-box'
-
-      console.debug(
-        `Found <p>: "${text.substring(0, 60)}" [isDate: ${isDate}, isDesc: ${isDescription}]`,
-      )
-      pTexts.push({ text, isDate, isDescription, element: pTag })
+    if (texts.length < 2) {
+      console.debug('Not enough text elements found')
+      return null
     }
 
-    // Process in order: first non-date/non-desc = position, second = company, date = workTimes
-    let positionTitle = ''
-    let companyName = ''
+    // Heuristic: first is position/company, second is company/position or date
+    let positionTitle = texts[0] ?? ''
+    let companyName = texts[1] ?? ''
     let workTimes = ''
-    let description = ''
-    let employmentType = ''
-    let location = ''
 
-    const nonSpecialTexts = pTexts
-      .filter((p) => !p.isDate && !p.isDescription)
-      .map((p) => p.text)
-    const dateTexts = pTexts.filter((p) => p.isDate).map((p) => p.text)
-    const descTexts = pTexts.filter((p) => p.isDescription).map((p) => p.text)
-
-    // First non-special text is position title
-    if (nonSpecialTexts.length >= 1) {
-      positionTitle = nonSpecialTexts[0] ?? ''
-      console.debug(`Identified positionTitle: "${positionTitle}"`)
+    // If second text looks like a date, swap assumptions
+    const secondText = texts[1]
+    if (texts.length >= 2 && secondText && isDateLine(secondText)) {
+      // texts[0] is likely company, texts[1] is date
+      companyName = texts[0] ?? ''
+      positionTitle = 'Unknown Position'
+      workTimes = secondText
+    } else if (texts.length >= 3) {
+      // texts[0] = position, texts[1] = company, texts[2] = date
+      workTimes = texts[2] ?? ''
     }
 
-    // Second non-special text is company name (or company · type)
-    if (nonSpecialTexts.length >= 2) {
-      const companyText = nonSpecialTexts[1] ?? ''
-      if (
-        companyText.includes('·') &&
-        (companyText.toLowerCase().includes('self-employed') ||
-          companyText.toLowerCase().includes('freelance') ||
-          companyText.toLowerCase().includes('full-time') ||
-          companyText.toLowerCase().includes('part-time'))
-      ) {
-        const parts = companyText.split('·')
-        companyName = parts[0]?.trim() ?? ''
-        employmentType = parts[1]?.trim() ?? ''
-        console.debug(
-          `Identified company+type: "${companyName}" / "${employmentType}"`,
-        )
-      } else {
-        companyName = companyText
-        console.debug(`Identified companyName: "${companyName}"`)
-      }
-    }
-
-    // Remaining non-special texts could be location or description
-    for (let i = 2; i < nonSpecialTexts.length; i++) {
-      const text = nonSpecialTexts[i]!
-      if (text.split(/\s+/).length > 6 || text.length > 100) {
-        if (!description) {
-          description = text
-          console.debug(`Identified description from leftovers`)
-        }
-      } else if (!location) {
-        location = text
-        console.debug(`Identified location from leftovers: "${location}"`)
-      }
-    }
-
-    // Date text is work times
-    if (dateTexts.length >= 1) {
-      workTimes = dateTexts[0] ?? ''
-      console.debug(`Identified workTimes: "${workTimes}"`)
-    }
-
-    // Description (if found by testid)
-    if (descTexts.length >= 1 && !description) {
-      description = descTexts[0] ?? ''
-      console.debug(`Identified description`)
-    }
-
-    if (!positionTitle && !companyName) {
-      console.debug('Could not find position or company, trying legacy parser')
-      return await parseExperienceItemLegacy(item)
-    }
-
-    const { fromDate, toDate, duration } = parseWorkTimes(workTimes)
+    const { fromDate, toDate, duration } = parseDateRange(workTimes, {
+      includeDuration: true,
+    })
 
     return {
       company: companyName || 'Unknown',
@@ -582,110 +369,14 @@ async function parseExperienceItemLinkless(
       positions: [
         {
           title: positionTitle || 'Unknown',
-          employmentType: employmentType || undefined,
           fromDate: fromDate ?? undefined,
           toDate: toDate ?? undefined,
           duration: duration ?? undefined,
-          location: location || undefined,
-          description: description || undefined,
         },
       ],
     }
   } catch (e) {
-    console.debug(`Error parsing linkless experience: ${e}`)
-    return await parseExperienceItemLegacy(item)
-  }
-}
-
-// Legacy parsing function for backward compatibility with old HTML structure
-async function parseExperienceItemLegacy(
-  item: Locator,
-): Promise<Experience | null> {
-  try {
-    const entity = item
-      .locator('div[data-view-name="profile-component-entity"]')
-      .first()
-    if ((await entity.count()) === 0) return null
-
-    const children = await entity.locator('> *').all()
-    if (children.length < 2) return null
-
-    const companyLink = children[0]?.locator('a').first()
-    const companyUrl = companyLink
-      ? ((await companyLink.getAttribute('href')) ?? undefined)
-      : undefined
-
-    const detailContainer = children[1]
-    if (!detailContainer) return null
-
-    const detailChildren = await detailContainer.locator('> *').all()
-
-    if (detailChildren.length === 0) return null
-
-    const firstDetail = detailChildren[0]
-    if (!firstDetail) return null
-
-    const nestedElements = await firstDetail.locator('> *').all()
-
-    if (nestedElements.length === 0) return null
-
-    const spanContainer = nestedElements[0]
-    if (!spanContainer) return null
-
-    const outerSpans = await spanContainer.locator('> *').all()
-
-    let positionTitle = ''
-    let companyName = ''
-    let workTimes = ''
-    let location = ''
-
-    if (outerSpans.length >= 1) {
-      const ariaSpan = outerSpans[0]
-        ?.locator('span[aria-hidden="true"]')
-        .first()
-      positionTitle = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
-    }
-    if (outerSpans.length >= 2) {
-      const ariaSpan = outerSpans[1]
-        ?.locator('span[aria-hidden="true"]')
-        .first()
-      companyName = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
-    }
-    if (outerSpans.length >= 3) {
-      const ariaSpan = outerSpans[2]
-        ?.locator('span[aria-hidden="true"]')
-        .first()
-      workTimes = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
-    }
-    if (outerSpans.length >= 4) {
-      const ariaSpan = outerSpans[3]
-        ?.locator('span[aria-hidden="true"]')
-        .first()
-      location = ariaSpan ? (await ariaSpan.textContent()) || '' : ''
-    }
-
-    const { fromDate, toDate, duration } = parseWorkTimes(workTimes)
-
-    let description = ''
-    if (detailChildren.length > 1)
-      description = (await detailChildren[1]?.innerText()) ?? ''
-
-    return {
-      company: companyName.trim(),
-      companyUrl: companyUrl,
-      positions: [
-        {
-          title: positionTitle.trim(),
-          fromDate: fromDate ?? undefined,
-          toDate: toDate ?? undefined,
-          duration: duration ?? undefined,
-          location: location.trim() || undefined,
-          description: description.trim() || undefined,
-        },
-      ],
-    }
-  } catch (e) {
-    console.debug(`Error parsing experience with legacy method: ${e}`)
+    console.debug(`Error in fallback parser: ${e}`)
     return null
   }
 }
@@ -734,7 +425,9 @@ async function parseNestedExperience(
           location = (await pTags[3]?.textContent())?.trim() ?? ''
         }
 
-        const { fromDate, toDate, duration } = parseWorkTimes(workTimes)
+        const { fromDate, toDate, duration } = parseDateRange(workTimes, {
+          includeDuration: true,
+        })
 
         // Look for description outside the <a> tag
         let description = ''

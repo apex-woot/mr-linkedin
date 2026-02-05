@@ -39,63 +39,92 @@ export async function extractUniqueTextsFromElement(
   return uniqueTexts
 }
 
+export interface DateParseResult {
+  fromDate: string | null
+  toDate: string | null
+  duration?: string | null
+}
+
+export function parseDateRange(
+  dateString: string,
+  options: { includeDuration?: boolean } = {},
+): DateParseResult {
+  if (!dateString) {
+    const result: DateParseResult = { fromDate: null, toDate: null }
+    if (options.includeDuration) {
+      result.duration = null
+    }
+    return result
+  }
+
+  try {
+    let dateRangePart = dateString
+    let duration: string | null = null
+
+    // Extract duration if requested (e.g., "Jan 2020 - Present · 1 yr 2 mos")
+    if (options.includeDuration && dateString.includes('·')) {
+      const parts = dateString.split('·')
+      dateRangePart = parts[0]?.trim() ?? ''
+      duration = parts[1]?.trim() ?? null
+    }
+
+    // Parse date range (e.g., "Jan 2020 - Present" or "2018 - 2020")
+    let fromDate: string | null = null
+    let toDate: string | null = null
+
+    if (dateRangePart.includes(' - ')) {
+      const dateParts = dateRangePart.split(' - ')
+      fromDate = dateParts[0]?.trim() ?? null
+      toDate = dateParts[1]?.trim() ?? null
+    } else {
+      // Single date (common in education: "2020")
+      const singleDate = dateRangePart.trim()
+      fromDate = singleDate || null
+      // For education (no duration), single year means both from and to
+      // For work (with duration), single date means only fromDate
+      toDate = options.includeDuration ? null : singleDate || null
+    }
+
+    const result: DateParseResult = { fromDate, toDate }
+    if (options.includeDuration) {
+      result.duration = duration
+    }
+    return result
+  } catch (e) {
+    console.debug(`Error parsing date range '${dateString}': ${e}`)
+    const result: DateParseResult = { fromDate: null, toDate: null }
+    if (options.includeDuration) {
+      result.duration = null
+    }
+    return result
+  }
+}
+
 /**
- * Parses a work duration string like "Jan 2020 - Present · 1 yr 2 mos"
+ * @deprecated Use parseDateRange() with includeDuration option instead
  */
 export function parseWorkTimes(workTimes: string): {
   fromDate: string | null
   toDate: string | null
   duration: string | null
 } {
-  if (!workTimes) return { fromDate: null, toDate: null, duration: null }
-
-  try {
-    const parts = workTimes.split('·')
-    const times = parts.length > 0 ? (parts[0]?.trim() ?? '') : ''
-    const duration = parts.length > 1 ? (parts[1]?.trim() ?? null) : null
-
-    let fromDate: string | null = null
-    let toDate: string | null = null
-
-    if (times?.includes(' - ')) {
-      const dateParts = times.split(' - ')
-      fromDate = dateParts[0]?.trim() ?? null
-      toDate = dateParts.length > 1 ? (dateParts[1]?.trim() ?? null) : null
-    } else {
-      fromDate = times || null
-      toDate = null
-    }
-
-    return { fromDate, toDate, duration }
-  } catch (e) {
-    console.debug(`Error parsing work times '${workTimes}': ${e}`)
-    return { fromDate: null, toDate: null, duration: null }
+  const result = parseDateRange(workTimes, { includeDuration: true })
+  return {
+    fromDate: result.fromDate,
+    toDate: result.toDate,
+    duration: result.duration ?? null,
   }
 }
 
 /**
- * Parses education time strings.
+ * @deprecated Use parseDateRange() without options instead
  */
 export function parseEducationTimes(times: string): {
   fromDate: string | null
   toDate: string | null
 } {
-  if (!times) return { fromDate: null, toDate: null }
-
-  try {
-    if (times.includes(' - ')) {
-      const parts = times.split(' - ')
-      const fromDate = parts[0]?.trim() ?? null
-      const toDate = parts.length > 1 ? (parts[1]?.trim() ?? null) : null
-      return { fromDate, toDate }
-    } else {
-      const year = times.trim()
-      return { fromDate: year, toDate: year }
-    }
-  } catch (e) {
-    console.debug(`Error parsing education times '${times}': ${e}`)
-    return { fromDate: null, toDate: null }
-  }
+  const result = parseDateRange(times)
+  return { fromDate: result.fromDate, toDate: result.toDate }
 }
 
 export function mapInterestTabToCategory(tabName: string): string {
