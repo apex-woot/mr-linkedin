@@ -1,5 +1,7 @@
 # Changelog
 
+## [1.0.11](https://github.com/apex-woot/mr-linkedin/compare/v1.0.10...v1.0.11) (2026-02-05)
+
 ## [1.0.10](https://github.com/apex-woot/mr-linkedin/compare/v1.1.1...v1.0.10) (2026-02-05)
 
 ### Bug Fixes
