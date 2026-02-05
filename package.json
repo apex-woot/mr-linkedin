@@ -28,15 +28,15 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/apex-woot/mr-linkedin.git"
+    "url": "git+https://github.com/apex-woot/mr-scraper.git"
   },
   "publishConfig": {
     "access": "public"
   },
   "bugs": {
-    "url": "https://github.com/apex-woot/mr-linkedin/issues"
+    "url": "https://github.com/apex-woot/mr-scraper/issues"
   },
-  "homepage": "https://github.com/apex-woot/mr-linkedin#readme",
+  "homepage": "https://github.com/apex-woot/mr-scraper#readme",
   "author": "apexwoot",
   "license": "GPL-3.0",
   "engines": {
