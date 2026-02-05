@@ -4,43 +4,13 @@
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 [![Bun](https://img.shields.io/badge/Bun-%23000000.svg?style=flat&logo=bun&logoColor=white)](https://bun.sh)
 
-A high-performance LinkedIn scraper for **Bun + TypeScript**. Built with **Playwright** and **Zod** for robust automation and type-safe data extraction.
-
-## Install
-
-```bash
-bun add @apexwoot/mr-scraper
-bun x playwright install chromium # Required for first-time use
-```
-
-## Quick Start
-
-You can authenticate using either your **credentials** or the **`li_at` session cookie**.
-
-```typescript
-import { BrowserManager, PersonScraper, loginWithCredentials } from "@apexwoot/mr-scraper";
-
-const browser = new BrowserManager({ headless: true });
-await browser.start();
-
-// Option A: Login with li_at cookie (Recommended)
-await browser.setCookie('li_at', process.env.LINKEDIN_LI_AT_COOKIE);
-
-// Option B: Login with credentials
-// await loginWithCredentials(browser.page, { email: '...', password: '...' });
-
-const scraper = new PersonScraper({ page: browser.page });
-const profile = await scraper.scrape("https://www.linkedin.com/in/some-profile/");
-
-console.log(profile.data.name);
-await browser.close();
-```
-
-> See `.env.example` for the list of required environment variables.
+A high-performance LinkedIn scraper for **Bun + Node.js**. Built with **Playwright** and **Zod** for robust automation and type-safe data extraction.
 
 ## Features
 
+- **Dual Runtime Support:** Optimized builds for both **Bun** and **Node.js** natively.
 - **Data Extraction:** Profiles, Companies, Job Postings, and Company Posts.
+
 - **Type Safety:** Full TypeScript support with Zod-validated schemas.
 - **Session Management:** Persist authentication via `storageState` to bypass logins.
 - **Extensible:** Custom callbacks for real-time progress tracking (JSON, Multi, Console).
