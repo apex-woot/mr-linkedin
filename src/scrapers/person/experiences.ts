@@ -1,5 +1,5 @@
 import type { Page } from 'playwright'
-import { SCRAPING_CONSTANTS } from '../../config/constants'
+import { ExperiencePageExtractor } from '../../extraction/page-extractors'
 import { ExperienceInterpreter } from '../../extraction/interpreters/experience'
 import { ExtractionPipeline } from '../../extraction/pipeline'
 import { AriaStrategy } from '../../extraction/strategies/aria-strategy'
@@ -7,12 +7,6 @@ import { RawTextStrategy } from '../../extraction/strategies/raw-text-strategy'
 import { SemanticStrategy } from '../../extraction/strategies/semantic-strategy'
 import type { Experience } from '../../models/person'
 import { log } from '../../utils/logger'
-import {
-  navigateAndWait,
-  scrollPageToBottom,
-  scrollPageToHalf,
-  waitAndFocus,
-} from '../utils'
 import { deduplicateItems } from './common-patterns'
 
 export async function getExperiences(
@@ -20,18 +14,13 @@ export async function getExperiences(
   baseUrl: string,
 ): Promise<Experience[]> {
   try {
-    const expUrl = `${baseUrl.replace(/\/$/, '')}/details/experience/`
-    log.debug('Navigating to experience details page')
-
-    await navigateAndWait(page, expUrl)
-    await page.waitForSelector('main', { timeout: 10000 })
-    await waitAndFocus(page, SCRAPING_CONSTANTS.EXPERIENCE_FOCUS_WAIT)
-    await scrollPageToHalf(page)
-    await scrollPageToBottom(
+    const extraction = await new ExperiencePageExtractor().extract({
       page,
-      SCRAPING_CONSTANTS.EXPERIENCE_SCROLL_PAUSE,
-      SCRAPING_CONSTANTS.EXPERIENCE_MAX_SCROLLS,
-    )
+      baseUrl,
+    })
+    if (extraction.kind !== 'list' || extraction.items.length === 0) {
+      return []
+    }
 
     const pipeline = new ExtractionPipeline<Experience>(
       [
