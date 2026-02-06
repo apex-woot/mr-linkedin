@@ -50,33 +50,33 @@ export class ContactParser implements RawParser<Contact> {
             : normalized.text
 
           if (value) {
-            contacts.push({
-              type: 'email',
-              value,
-              label: label || undefined,
-            })
+            contacts.push(
+              label
+                ? { type: 'email', value, label }
+                : { type: 'email', value },
+            )
           }
           continue
         }
 
         if (contactType === 'linkedin') {
           if (normalized.href) {
-            contacts.push({
-              type: 'linkedin',
-              value: normalized.href,
-              label: label || undefined,
-            })
+            contacts.push(
+              label
+                ? { type: 'linkedin', value: normalized.href, label }
+                : { type: 'linkedin', value: normalized.href },
+            )
           }
           continue
         }
 
         const value = normalized.href || normalized.text
         if (value) {
-          contacts.push({
-            type: contactType,
-            value,
-            label: label || undefined,
-          })
+          contacts.push(
+            label
+              ? { type: contactType, value, label }
+              : { type: contactType, value },
+          )
         }
       }
     }
@@ -108,7 +108,7 @@ function extractPlainValue(text: string, heading: string): string | null {
 
   const headingRegex = new RegExp(`^${escapeRegex(heading)}\\s*`, 'i')
   cleaned = cleaned.replace(headingRegex, '').trim()
-  cleaned = cleaned.replace(/^:\\s*/, '').trim()
+  cleaned = cleaned.replace(/^\s*:\s*/, '').trim()
 
   return cleaned || null
 }
