@@ -19,9 +19,7 @@ import { log } from '../utils/logger'
  */
 export async function ensureLoggedIn(page: Page): Promise<void> {
   if (!(await isLoggedIn(page))) {
-    throw new AuthenticationError(
-      'Not logged in. Please authenticate before scraping.',
-    )
+    throw new AuthenticationError('Not logged in. Please authenticate before scraping.')
   }
 }
 
@@ -36,11 +34,7 @@ export async function checkRateLimit(page: Page): Promise<void> {
 /**
  * Scrolls the page to the bottom with pauses between scrolls.
  */
-export async function scrollPageToBottom(
-  page: Page,
-  pauseTime: number = 1.0,
-  maxScrolls: number = 10,
-): Promise<void> {
+export async function scrollPageToBottom(page: Page, pauseTime: number = 1.0, maxScrolls: number = 10): Promise<void> {
   await scrollToBottom(page, pauseTime, maxScrolls)
 }
 
@@ -54,10 +48,7 @@ export async function scrollPageToHalf(page: Page): Promise<void> {
 /**
  * Scrolls an element into view if needed.
  */
-export async function scrollElementIntoView(
-  page: Page,
-  selector: string,
-): Promise<void> {
+export async function scrollElementIntoView(page: Page, selector: string): Promise<void> {
   try {
     const element = page.locator(selector).first()
     await element.scrollIntoViewIfNeeded()
@@ -70,10 +61,7 @@ export async function scrollElementIntoView(
  * Clicks all "See More" buttons on the page.
  * Returns the number of buttons clicked.
  */
-export async function clickAllSeeMoreButtons(
-  page: Page,
-  maxAttempts: number = 10,
-): Promise<number> {
+export async function clickAllSeeMoreButtons(page: Page, maxAttempts: number = 10): Promise<number> {
   return await clickSeeMoreButtons(page, maxAttempts)
 }
 
@@ -101,11 +89,7 @@ export async function safeExtractText(
  * Safely clicks an element with retries.
  * Returns true if successful, false otherwise.
  */
-export async function safeClick(
-  page: Page,
-  selector: string,
-  timeout: number = 5000,
-): Promise<boolean> {
+export async function safeClick(page: Page, selector: string, timeout: number = 5000): Promise<boolean> {
   try {
     return await retryAsync(
       async () => {
@@ -127,10 +111,7 @@ export async function safeClick(
 /**
  * Waits for navigation to complete (network idle).
  */
-export async function waitForNavigationComplete(
-  page: Page,
-  timeout: number = 30000,
-): Promise<void> {
+export async function waitForNavigationComplete(page: Page, timeout: number = 30000): Promise<void> {
   try {
     await page.waitForLoadState('networkidle', { timeout })
   } catch {
@@ -170,9 +151,7 @@ export async function extractListItems(
     const items = await container.locator(itemSelector).all()
     return items
   } catch {
-    log.warning(
-      `Container not found or error extracting items: ${containerSelector}`,
-    )
+    log.warning(`Container not found or error extracting items: ${containerSelector}`)
     return []
   }
 }
@@ -200,10 +179,7 @@ export async function getAttributeSafe(
 /**
  * Waits for a duration and brings the page to front.
  */
-export async function waitAndFocus(
-  page: Page,
-  duration: number = 1.0,
-): Promise<void> {
+export async function waitAndFocus(page: Page, duration: number = 1.0): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, duration * 1000))
   try {
     await page.bringToFront()
@@ -213,10 +189,7 @@ export async function waitAndFocus(
 /**
  * Counts the number of elements matching a selector.
  */
-export async function countElements(
-  page: Page,
-  selector: string,
-): Promise<number> {
+export async function countElements(page: Page, selector: string): Promise<number> {
   try {
     return await page.locator(selector).count()
   } catch {
@@ -227,11 +200,7 @@ export async function countElements(
 /**
  * Checks if an element exists on the page.
  */
-export async function elementExists(
-  page: Page,
-  selector: string,
-  timeout: number = 1000,
-): Promise<boolean> {
+export async function elementExists(page: Page, selector: string, timeout: number = 1000): Promise<boolean> {
   try {
     await page.waitForSelector(selector, { timeout, state: 'attached' })
     return true

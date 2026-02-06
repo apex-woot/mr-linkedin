@@ -15,33 +15,21 @@ export class RawTextExtractor implements TextExtractor {
   async extract(element: Locator): Promise<ExtractedText | null> {
     try {
       const rawText = await element.innerText().catch(() => '')
-      if (!rawText.trim()) {
-        return null
-      }
+      if (!rawText.trim()) return null
 
       const lines = rawText
         .split('\n')
         .map((line) => line.trim())
-        .filter(
-          (line) =>
-            line.length > 0 &&
-            line.length < SCRAPING_CONSTANTS.MAX_FALLBACK_TEXT_LENGTH,
-        )
+        .filter((line) => line.length > 0 && line.length < SCRAPING_CONSTANTS.MAX_FALLBACK_TEXT_LENGTH)
 
-      if (lines.length === 0) {
-        return null
-      }
+      if (lines.length === 0) return null
 
       const deduplicated: string[] = []
       for (const line of lines) {
-        if (deduplicated[deduplicated.length - 1] !== line) {
-          deduplicated.push(line)
-        }
+        if (deduplicated[deduplicated.length - 1] !== line) deduplicated.push(line)
       }
 
-      if (deduplicated.length === 0) {
-        return null
-      }
+      if (deduplicated.length === 0) return null
 
       return {
         texts: deduplicated,

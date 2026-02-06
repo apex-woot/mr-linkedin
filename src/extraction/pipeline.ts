@@ -1,12 +1,7 @@
 import type { Locator } from 'playwright'
 import { deduplicateItems } from '../scrapers/person/common-patterns'
 import { log } from '../utils/logger'
-import type {
-  PageExtractor,
-  PageExtractorConfig,
-  RawSection,
-  TaggedLocator,
-} from './page-extractors'
+import type { PageExtractor, PageExtractorConfig, RawSection, TaggedLocator } from './page-extractors'
 import type { Parser, RawParser } from './parsers'
 import type { ExtractedText, TextExtractor } from './text-extractors'
 
@@ -42,9 +37,7 @@ export class ExtractionPipeline<T> {
 
   constructor(config: PipelineConfig<T>) {
     this.config = config
-    this.textExtractors = [...config.textExtractors].sort(
-      (a, b) => a.priority - b.priority,
-    )
+    this.textExtractors = [...config.textExtractors].sort((a, b) => a.priority - b.priority)
   }
 
   async extract(extractorConfig: PageExtractorConfig): Promise<PipelineResult<T>> {
@@ -72,11 +65,7 @@ export class ExtractionPipeline<T> {
         break
       }
       case 'single': {
-        const handled = await this.handleSingle(
-          pageResult.element,
-          pageResult.context,
-          diagnostics,
-        )
+        const handled = await this.handleSingle(pageResult.element, pageResult.context, diagnostics)
         items = handled.items
         totalConfidence = handled.totalConfidence
         break
@@ -87,20 +76,17 @@ export class ExtractionPipeline<T> {
       }
     }
 
-    if (this.config.deduplicateKey) {
-      items = deduplicateItems(items, this.config.deduplicateKey)
-    }
+    if (this.config.deduplicateKey) items = deduplicateItems(items, this.config.deduplicateKey)
 
-    if (items.length > 0) {
-      diagnostics.avgConfidence = totalConfidence / items.length
-    }
+    if (items.length > 0) diagnostics.avgConfidence = totalConfidence / items.length
 
     if (this.config.captureHtmlOnFailure && items.length === 0) {
       try {
-        diagnostics.capturedHtml = (await extractorConfig.page
-          .locator('main')
-          .innerHTML()
-          .catch(() => '')
+        diagnostics.capturedHtml = (
+          await extractorConfig.page
+            .locator('main')
+            .innerHTML()
+            .catch(() => '')
         ).slice(0, 8000)
       } catch {
         // Best effort.
@@ -213,10 +199,7 @@ export class ExtractionPipeline<T> {
     return items
   }
 
-  private async extractText(
-    element: Locator,
-    diagnostics: PipelineDiagnostics,
-  ): Promise<ExtractedText | null> {
+  private async extractText(element: Locator, diagnostics: PipelineDiagnostics): Promise<ExtractedText | null> {
     const threshold = this.config.confidenceThreshold ?? 0.5
     let bestBelowThreshold: ExtractedText | null = null
 
@@ -224,24 +207,17 @@ export class ExtractionPipeline<T> {
       addAttempt(diagnostics.textExtractorsAttempted, extractor.name)
 
       try {
-        if (!(await extractor.canHandle(element))) {
-          continue
-        }
+        if (!(await extractor.canHandle(element))) continue
 
         const extracted = await extractor.extract(element)
-        if (!extracted || extracted.texts.length === 0) {
-          continue
-        }
+        if (!extracted || extracted.texts.length === 0) continue
 
         if (extracted.confidence >= threshold) {
           diagnostics.textExtractorUsed ??= extractor.name
           return extracted
         }
 
-        if (
-          !bestBelowThreshold ||
-          extracted.confidence > bestBelowThreshold.confidence
-        ) {
+        if (!bestBelowThreshold || extracted.confidence > bestBelowThreshold.confidence) {
           bestBelowThreshold = extracted
         }
       } catch (e) {
@@ -259,9 +235,7 @@ export class ExtractionPipeline<T> {
 }
 
 function addAttempt(attempts: string[], name: string): void {
-  if (!attempts.includes(name)) {
-    attempts.push(name)
-  }
+  if (!attempts.includes(name)) attempts.push(name)
 }
 
 function hasParseRaw<T>(parser: Parser<T>): parser is RawParser<T> {

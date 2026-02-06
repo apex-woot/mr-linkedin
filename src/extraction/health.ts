@@ -63,13 +63,10 @@ function buildMessage<T>(
   const extractor = result.diagnostics.textExtractorUsed ?? 'none'
   const confidence = result.diagnostics.avgConfidence
 
-  if (status === 'healthy') {
-    return `${section} extraction healthy using ${extractor}`
-  }
+  if (status === 'healthy') return `${section} extraction healthy using ${extractor}`
 
-  if (status === 'degraded') {
+  if (status === 'degraded')
     return `${section} extraction degraded: ${result.items.length} items, confidence ${confidence.toFixed(2)}`
-  }
 
   return `${section} extraction broken: no reliable text extractor succeeded`
 }

@@ -1,11 +1,5 @@
 import type { Experience, Position } from '../../models/person'
-import {
-  isDateLine,
-  isDescriptionLike,
-  isLocationLike,
-  parseDateRange,
-  toPlainText,
-} from '../../scrapers/person/utils'
+import { isDateLine, isDescriptionLike, isLocationLike, parseDateRange, toPlainText } from '../../scrapers/person/utils'
 import type { ExtractedLink } from '../text-extractors'
 import type { ParseInput, Parser } from './types'
 
@@ -14,9 +8,7 @@ export class ExperienceParser implements Parser<Experience> {
 
   parse(input: ParseInput): Experience | null {
     const texts = input.texts.map((t) => t.trim()).filter(Boolean)
-    if (texts.length === 0) {
-      return null
-    }
+    if (texts.length === 0) return null
 
     if (input.subItems && input.subItems.length > 0) {
       const company = texts[0] ?? undefined
@@ -24,9 +16,7 @@ export class ExperienceParser implements Parser<Experience> {
         .map((subItem) => parsePosition(subItem.texts))
         .filter((position): position is Position => !!position)
 
-      if (positions.length === 0) {
-        return null
-      }
+      if (positions.length === 0) return null
 
       return {
         company,
@@ -37,9 +27,7 @@ export class ExperienceParser implements Parser<Experience> {
     }
 
     const parsed = parseSingleExperience(texts, input.links)
-    if (!parsed) {
-      return null
-    }
+    if (!parsed) return null
 
     return {
       company: parsed.company,
@@ -50,16 +38,10 @@ export class ExperienceParser implements Parser<Experience> {
   }
 
   validate(item: Experience): boolean {
-    if (!item.positions || item.positions.length === 0) {
-      return false
-    }
+    if (!item.positions || item.positions.length === 0) return false
 
     const primary = item.positions[0]
-    const hasPositionSignal =
-      !!primary?.title ||
-      !!primary?.fromDate ||
-      !!primary?.location ||
-      !!primary?.description
+    const hasPositionSignal = !!primary?.title || !!primary?.fromDate || !!primary?.location || !!primary?.description
 
     return !!item.company || hasPositionSignal
   }
@@ -70,9 +52,7 @@ function parseSingleExperience(
   links: ExtractedLink[],
 ): { company?: string; position: Position } | null {
   const title = texts[0]
-  if (!title) {
-    return null
-  }
+  if (!title) return null
 
   const second = texts[1] ?? ''
   let company = second || undefined
@@ -105,16 +85,12 @@ function parseSingleExperience(
 
 function parsePosition(texts: string[]): Position | null {
   const lines = texts.map((t) => t.trim()).filter(Boolean)
-  if (lines.length === 0) {
-    return null
-  }
+  if (lines.length === 0) return null
 
   const title = lines[0]
   let employmentType: string | undefined
 
-  if (lines[1] && !isDateLine(lines[1]) && !isLocationLike(lines[1])) {
-    employmentType = lines[1]
-  }
+  if (lines[1] && !isDateLine(lines[1]) && !isLocationLike(lines[1])) employmentType = lines[1]
 
   const metaStart = employmentType ? 2 : 1
   const meta = extractMeta(lines.slice(metaStart))
@@ -158,9 +134,7 @@ function extractMeta(lines: string[]): {
       continue
     }
 
-    if (!description && isDescriptionLike(line)) {
-      description = line
-    }
+    if (!description && isDescriptionLike(line)) description = line
   }
 
   return {

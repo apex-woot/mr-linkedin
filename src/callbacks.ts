@@ -95,9 +95,7 @@ export function createJSONLogCallback(logFile: string): ProgressCallback {
  * @param callbacks - Array of callbacks to forward events to
  * @returns ProgressCallback that invokes all provided callbacks
  */
-export function createMultiCallback(
-  ...callbacks: ProgressCallback[]
-): ProgressCallback {
+export function createMultiCallback(...callbacks: ProgressCallback[]): ProgressCallback {
   return {
     onStart: async (type: string, url: string) => {
       await Promise.all(callbacks.map((c) => c.onStart(type, url)))

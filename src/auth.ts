@@ -4,11 +4,7 @@ import { detectRateLimit } from './utils'
 import { log } from './utils/logger'
 
 export async function warmUpBrowser(page: Page): Promise<void> {
-  const sites = [
-    'https://www.google.com',
-    'https://www.wikipedia.org',
-    'https://www.github.com',
-  ]
+  const sites = ['https://www.google.com', 'https://www.wikipedia.org', 'https://www.github.com']
 
   log.info('Warming up browser by visiting normal sites...')
 
@@ -46,10 +42,7 @@ export const LoginOptionsSchema = z.object({
 
 export type LoginOptions = z.input<typeof LoginOptionsSchema>
 
-export async function loginWithCredentials(
-  page: Page,
-  options: LoginOptions = {},
-): Promise<void> {
+export async function loginWithCredentials(page: Page, options: LoginOptions = {}): Promise<void> {
   const parsedOptions = LoginOptionsSchema.parse(options)
   let { email, password, timeout, warmUp } = parsedOptions
 
@@ -67,9 +60,7 @@ export async function loginWithCredentials(
     )
   }
 
-  if (warmUp) {
-    await warmUpBrowser(page)
-  }
+  if (warmUp) await warmUpBrowser(page)
 
   log.info('Logging in to LinkedIn...')
 
@@ -145,22 +136,15 @@ export async function loginWithCredentials(
     }
 
     if (!loggedIn) {
-      log.warning(
-        'Could not verify login by finding navigation element. Proceeding anyway...',
-      )
+      log.warning('Could not verify login by finding navigation element. Proceeding anyway...')
     }
   } catch (e) {
-    if (e instanceof AuthenticationError) {
-      throw e
-    }
+    if (e instanceof AuthenticationError) throw e
     throw new AuthenticationError(`Unexpected error during login: ${e}`)
   }
 }
 
-export async function loginWithCookie(
-  page: Page,
-  cookieValue: string,
-): Promise<void> {
+export async function loginWithCookie(page: Page, cookieValue: string): Promise<void> {
   log.info('Logging in with cookie...')
 
   try {
@@ -178,9 +162,7 @@ export async function loginWithCookie(
     })
 
     if (page.url().includes('login') || page.url().includes('authwall')) {
-      throw new AuthenticationError(
-        'Cookie authentication failed. The cookie may be expired or invalid.',
-      )
+      throw new AuthenticationError('Cookie authentication failed. The cookie may be expired or invalid.')
     }
 
     const startTime = Date.now()
@@ -194,13 +176,9 @@ export async function loginWithCookie(
       await new Promise((resolve) => setTimeout(resolve, 500))
     }
 
-    if (!loggedIn) {
-      log.warning('Could not verify cookie login. Proceeding anyway...')
-    }
+    if (!loggedIn) log.warning('Could not verify cookie login. Proceeding anyway...')
   } catch (e) {
-    if (e instanceof AuthenticationError) {
-      throw e
-    }
+    if (e instanceof AuthenticationError) throw e
     throw new AuthenticationError(`Cookie authentication error: ${e}`)
   }
 }
@@ -217,29 +195,18 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
       '/uas/login',
       '/uas/consumer-email-challenge',
     ]
-    if (authBlockers.some((pattern) => currentUrl.includes(pattern))) {
-      return false
-    }
+    if (authBlockers.some((pattern) => currentUrl.includes(pattern))) return false
 
-    const oldSelectors =
-      '.global-nav__primary-link, [data-control-name="nav.settings"]'
+    const oldSelectors = '.global-nav__primary-link, [data-control-name="nav.settings"]'
     const oldCount = await page.locator(oldSelectors).count()
 
-    const newSelectors =
-      'nav a[href*="/feed"], nav button:has-text("Home"), nav a[href*="/mynetwork"]'
+    const newSelectors = 'nav a[href*="/feed"], nav button:has-text("Home"), nav a[href*="/mynetwork"]'
     const newCount = await page.locator(newSelectors).count()
 
     const hasNavElements = oldCount > 0 || newCount > 0
 
-    const authenticatedOnlyPages = [
-      '/feed',
-      '/mynetwork',
-      '/messaging',
-      '/notifications',
-    ]
-    const isAuthenticatedPage = authenticatedOnlyPages.some((pattern) =>
-      currentUrl.includes(pattern),
-    )
+    const authenticatedOnlyPages = ['/feed', '/mynetwork', '/messaging', '/notifications']
+    const isAuthenticatedPage = authenticatedOnlyPages.some((pattern) => currentUrl.includes(pattern))
 
     return hasNavElements || isAuthenticatedPage
   } catch (_e) {
@@ -247,14 +214,8 @@ export async function isLoggedIn(page: Page): Promise<boolean> {
   }
 }
 
-export async function waitForManualLogin(
-  page: Page,
-  timeout: number = 300000,
-): Promise<void> {
-  log.info(
-    '⏳ Please complete the login process manually in the browser. ' +
-      'Waiting up to 5 minutes...',
-  )
+export async function waitForManualLogin(page: Page, timeout: number = 300000): Promise<void> {
+  log.info('⏳ Please complete the login process manually in the browser. ' + 'Waiting up to 5 minutes...')
 
   const startTime = Date.now()
 
@@ -266,9 +227,7 @@ export async function waitForManualLogin(
 
     const elapsed = Date.now() - startTime
     if (elapsed > timeout) {
-      throw new AuthenticationError(
-        'Manual login timeout. Please try again and complete login faster.',
-      )
+      throw new AuthenticationError('Manual login timeout. Please try again and complete login faster.')
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1000))

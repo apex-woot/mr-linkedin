@@ -1,19 +1,10 @@
-import {
-  BrowserManager,
-  createConsoleCallback,
-  loginWithCookie,
-  loginWithCredentials,
-  scrapePerson,
-} from '../src'
+import { BrowserManager, createConsoleCallback, loginWithCookie, loginWithCredentials, scrapePerson } from '../src'
 
 async function runExample() {
   const defaultUrl = ''
 
   console.log('\n--- LinkedIn Profile Scraper ---')
-  const inputUrl = prompt(
-    'Enter LinkedIn Profile URL (or press Enter for default):',
-    defaultUrl,
-  )
+  const inputUrl = prompt('Enter LinkedIn Profile URL (or press Enter for default):', defaultUrl)
   const linkedinUrl = inputUrl || defaultUrl
 
   const outputChoice = prompt(
@@ -27,9 +18,7 @@ async function runExample() {
 
   console.log(`\nStarting example scraper for: ${linkedinUrl}`)
   console.log(`Mode: ${isHeadless ? 'Headless' : 'Headed (Browser Visible)'}`)
-  if (onlyExperience) {
-    console.log('Scraping: Experience and Patents')
-  }
+  if (onlyExperience) console.log('Scraping: Experience and Patents')
 
   const browser = new BrowserManager({
     headless: isHeadless,
@@ -46,9 +35,7 @@ async function runExample() {
       console.log('Found credentials in .env, logging in...')
       await loginWithCredentials(browser.page)
     } else {
-      console.warn(
-        'No authentication found in .env. Profile scraping may be limited.',
-      )
+      console.warn('No authentication found in .env. Profile scraping may be limited.')
     }
 
     const profile = await scrapePerson(browser.page, linkedinUrl, {

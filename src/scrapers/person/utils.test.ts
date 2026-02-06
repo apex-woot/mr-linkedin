@@ -1,9 +1,5 @@
 import { describe, expect, test } from 'bun:test'
-import {
-  normalizePlainTextLines,
-  parseDateRange,
-  toPlainText,
-} from './utils'
+import { normalizePlainTextLines, parseDateRange, toPlainText } from './utils'
 
 describe('parseDateRange', () => {
   describe('basic date range parsing', () => {
@@ -122,12 +118,7 @@ describe('plainText helpers', () => {
   })
 
   test('filters known noise lines', () => {
-    const result = normalizePlainTextLines([
-      'See patent',
-      'Other inventors',
-      '+3',
-      'Real description',
-    ])
+    const result = normalizePlainTextLines(['See patent', 'Other inventors', '+3', 'Real description'])
 
     expect(result).toEqual(['Real description'])
   })

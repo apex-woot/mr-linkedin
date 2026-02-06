@@ -54,10 +54,7 @@ export function buildSelfHealPrompt(context: SelfHealContext): string {
   ].join('\n\n')
 }
 
-async function captureSectionHtml(
-  page: Page,
-  maxLength: number,
-): Promise<string> {
+async function captureSectionHtml(page: Page, maxLength: number): Promise<string> {
   const mainHtml = await page
     .locator('main')
     .innerHTML()

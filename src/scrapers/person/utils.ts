@@ -6,15 +6,10 @@ import { log } from '../../utils/logger'
  * Extracts unique text content from an element's children.
  * Useful for filtering out duplicate hidden text (e.g. accessibility labels).
  */
-export async function extractUniqueTextsFromElement(
-  element: Locator,
-): Promise<string[]> {
-  let textElements = await element
-    .locator('span[aria-hidden="true"], div > span')
-    .all()
+export async function extractUniqueTextsFromElement(element: Locator): Promise<string[]> {
+  let textElements = await element.locator('span[aria-hidden="true"], div > span').all()
 
-  if (textElements.length === 0)
-    textElements = await element.locator('span, div').all()
+  if (textElements.length === 0) textElements = await element.locator('span, div').all()
 
   const seenTexts = new Set<string>()
   const uniqueTexts: string[] = []
@@ -27,9 +22,7 @@ export async function extractUniqueTextsFromElement(
         !seenTexts.has(trimmed) &&
         trimmed.length < 200 &&
         !Array.from(seenTexts).some(
-          (t) =>
-            (t.length > 3 && trimmed.includes(t)) ||
-            (trimmed.length > 3 && t.includes(trimmed)),
+          (t) => (t.length > 3 && trimmed.includes(t)) || (trimmed.length > 3 && t.includes(trimmed)),
         )
       ) {
         seenTexts.add(trimmed)
@@ -47,15 +40,10 @@ export interface DateParseResult {
   duration?: string | null
 }
 
-export function parseDateRange(
-  dateString: string,
-  options: { includeDuration?: boolean } = {},
-): DateParseResult {
+export function parseDateRange(dateString: string, options: { includeDuration?: boolean } = {}): DateParseResult {
   if (!dateString) {
     const result: DateParseResult = { fromDate: null, toDate: null }
-    if (options.includeDuration) {
-      result.duration = null
-    }
+    if (options.includeDuration) result.duration = null
     return result
   }
 
@@ -82,10 +70,7 @@ export function parseDateRange(
       // Normalize "current" keywords to standard "Present"
       if (toDate) {
         for (const keyword of DATE_PATTERNS.CURRENT_KEYWORDS) {
-          if (
-            toDate === keyword ||
-            toDate.toLowerCase() === keyword.toLowerCase()
-          ) {
+          if (toDate === keyword || toDate.toLowerCase() === keyword.toLowerCase()) {
             toDate = 'Present'
             break
           }
@@ -101,16 +86,12 @@ export function parseDateRange(
     }
 
     const result: DateParseResult = { fromDate, toDate }
-    if (options.includeDuration) {
-      result.duration = duration
-    }
+    if (options.includeDuration) result.duration = duration
     return result
   } catch (e) {
     log.debug(`Error parsing date range '${dateString}': ${e}`)
     const result: DateParseResult = { fromDate: null, toDate: null }
-    if (options.includeDuration) {
-      result.duration = null
-    }
+    if (options.includeDuration) result.duration = null
     return result
   }
 }
@@ -121,8 +102,7 @@ export function mapInterestTabToCategory(tabName: string): string {
   if (tabLower.includes('group')) return 'group'
   if (tabLower.includes('school')) return 'school'
   if (tabLower.includes('newsletter')) return 'newsletter'
-  if (tabLower.includes('voice') || tabLower.includes('influencer'))
-    return 'influencer'
+  if (tabLower.includes('voice') || tabLower.includes('influencer')) return 'influencer'
   return tabLower
 }
 
@@ -141,9 +121,7 @@ export function mapContactHeadingToType(heading: string): string | null {
 /**
  * Normalizes extracted lines to stable text suitable for plainText fields.
  */
-export function normalizePlainTextLines(
-  lines: Array<string | null | undefined>,
-): string[] {
+export function normalizePlainTextLines(lines: Array<string | null | undefined>): string[] {
   const normalized = lines
     .map((line) => (line ?? '').replace(/\s+/g, ' ').trim())
     .filter(Boolean)
@@ -151,17 +129,13 @@ export function normalizePlainTextLines(
 
   const deduped: string[] = []
   for (const line of normalized) {
-    if (deduped[deduped.length - 1] !== line) {
-      deduped.push(line)
-    }
+    if (deduped[deduped.length - 1] !== line) deduped.push(line)
   }
 
   return deduped
 }
 
-export function toPlainText(
-  lines: Array<string | null | undefined>,
-): string | undefined {
+export function toPlainText(lines: Array<string | null | undefined>): string | undefined {
   const normalized = normalizePlainTextLines(lines)
   if (normalized.length === 0) return undefined
   return normalized.join('\n')
@@ -169,11 +143,7 @@ export function toPlainText(
 
 function isNoiseLine(line: string): boolean {
   const lower = line.toLowerCase()
-  if (
-    lower === 'see patent' ||
-    lower === 'show patent' ||
-    lower === 'other inventors'
-  ) {
+  if (lower === 'see patent' || lower === 'show patent' || lower === 'other inventors') {
     return true
   }
 
@@ -186,9 +156,7 @@ function isNoiseLine(line: string): boolean {
  */
 export function isDateLine(text: string): boolean {
   const hasDateSeparator = text.includes(DATE_PATTERNS.DATE_RANGE_SEPARATOR)
-  const hasCurrentKeyword = DATE_PATTERNS.CURRENT_KEYWORDS.some((kw) =>
-    text.includes(kw),
-  )
+  const hasCurrentKeyword = DATE_PATTERNS.CURRENT_KEYWORDS.some((kw) => text.includes(kw))
   const hasDuration = DATE_PATTERNS.DURATION_REGEX.test(text)
   const hasYear = DATE_PATTERNS.YEAR_REGEX.test(text)
   return (hasDateSeparator || hasCurrentKeyword) && (hasDuration || hasYear)

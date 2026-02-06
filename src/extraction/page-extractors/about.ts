@@ -1,9 +1,5 @@
 import type { Locator } from 'playwright'
-import type {
-  PageExtractor,
-  PageExtractorConfig,
-  PageExtractorResult,
-} from './types'
+import type { PageExtractor, PageExtractorConfig, PageExtractorResult } from './types'
 
 const ABOUT_ROOT_SELECTORS = [
   '[data-testid="expandable-text-box"]',
@@ -27,9 +23,7 @@ export class AboutPageExtractor implements PageExtractor {
   private async resolveElement(config: PageExtractorConfig): Promise<Locator> {
     for (const selector of ABOUT_ROOT_SELECTORS) {
       const candidate = config.page.locator(selector).first()
-      if ((await candidate.count()) > 0) {
-        return candidate
-      }
+      if ((await candidate.count()) > 0) return candidate
     }
 
     return config.page.locator('main').first()

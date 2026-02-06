@@ -2,19 +2,12 @@ import type { Page } from 'playwright'
 import { AccomplishmentParser } from '../../extraction/parsers'
 import { AccomplishmentPageExtractor } from '../../extraction/page-extractors'
 import { ExtractionPipeline } from '../../extraction/pipeline'
-import {
-  AriaTextExtractor,
-  RawTextExtractor,
-  SemanticTextExtractor,
-} from '../../extraction/text-extractors'
+import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import type { Accomplishment } from '../../models'
 import { log } from '../../utils/logger'
 import { deduplicateItems } from './common-patterns'
 
-export async function getAccomplishments(
-  page: Page,
-  baseUrl: string,
-): Promise<Accomplishment[]> {
+export async function getAccomplishments(page: Page, baseUrl: string): Promise<Accomplishment[]> {
   const accomplishments: Accomplishment[] = []
 
   const accomplishmentSections: Array<[string, string]> = [
@@ -35,11 +28,7 @@ export async function getAccomplishments(
           urlPath,
           category,
         }),
-        textExtractors: [
-          new AriaTextExtractor(),
-          new SemanticTextExtractor(),
-          new RawTextExtractor(),
-        ],
+        textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
         parser: new AccomplishmentParser(),
         confidenceThreshold: 0.25,
         captureHtmlOnFailure: true,
@@ -47,10 +36,7 @@ export async function getAccomplishments(
 
       const result = await pipeline.extract({ page, baseUrl })
       if (result.items.length > 0) {
-        const unique = deduplicateItems(
-          result.items,
-          (item) => `${item.category}|${item.title}`,
-        )
+        const unique = deduplicateItems(result.items, (item) => `${item.category}|${item.title}`)
         accomplishments.push(...unique)
       }
 
@@ -62,8 +48,5 @@ export async function getAccomplishments(
     }
   }
 
-  return deduplicateItems(
-    accomplishments,
-    (item) => `${item.category}|${item.title}`,
-  )
+  return deduplicateItems(accomplishments, (item) => `${item.category}|${item.title}`)
 }

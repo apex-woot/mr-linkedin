@@ -17,8 +17,7 @@ const LOG_LEVELS: Record<LogLevel, number> = {
 }
 
 // Default level is info unless specified in environment
-const DEFAULT_LEVEL =
-  (process.env.LOG_LEVEL?.toLowerCase() as LogLevel) || 'info'
+const DEFAULT_LEVEL = (process.env.LOG_LEVEL?.toLowerCase() as LogLevel) || 'info'
 const currentLevelPriority = LOG_LEVELS[DEFAULT_LEVEL] ?? LOG_LEVELS.info
 
 function shouldLog(level: LogLevel): boolean {

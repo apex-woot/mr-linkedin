@@ -4,13 +4,7 @@ import { ScrapingError } from '../../exceptions'
 import type { PersonData } from '../../models'
 import { createPerson } from '../../models'
 import { log } from '../../utils/logger'
-import {
-  ensureLoggedIn,
-  navigateAndWait,
-  scrollPageToBottom,
-  scrollPageToHalf,
-  waitAndFocus,
-} from '../utils'
+import { ensureLoggedIn, navigateAndWait, scrollPageToBottom, scrollPageToHalf, waitAndFocus } from '../utils'
 import { getAccomplishments } from './accomplishments'
 import { getContactInfo } from './contact-info'
 import { getEducations } from './educations'
@@ -68,54 +62,30 @@ export async function scrapePerson(
     const openToWork = await checkOpenToWork(page)
 
     const about = sections.about ? await getAbout(page) : null
-    if (sections.about) {
-      log.debug('Got about section')
-    }
+    if (sections.about) log.debug('Got about section')
 
     if (sections.experiences || sections.educations) {
       await scrollPageToHalf(page)
       await scrollPageToBottom(page, 0.5, 3)
     }
 
-    const experiences = sections.experiences
-      ? await getExperiences(page, linkedinUrl)
-      : []
-    if (sections.experiences) {
-      log.debug(`Got ${experiences.length} experiences`)
-    }
+    const experiences = sections.experiences ? await getExperiences(page, linkedinUrl) : []
+    if (sections.experiences) log.debug(`Got ${experiences.length} experiences`)
 
-    const educations = sections.educations
-      ? await getEducations(page, linkedinUrl)
-      : []
-    if (sections.educations) {
-      log.debug(`Got ${educations.length} educations`)
-    }
+    const educations = sections.educations ? await getEducations(page, linkedinUrl) : []
+    if (sections.educations) log.debug(`Got ${educations.length} educations`)
 
     const patents = sections.patents ? await getPatents(page, linkedinUrl) : []
-    if (sections.patents) {
-      log.debug(`Got ${patents.length} patents`)
-    }
+    if (sections.patents) log.debug(`Got ${patents.length} patents`)
 
-    const interests = sections.interests
-      ? await getInterests(page, linkedinUrl)
-      : []
-    if (sections.interests) {
-      log.debug(`Got ${interests.length} interests`)
-    }
+    const interests = sections.interests ? await getInterests(page, linkedinUrl) : []
+    if (sections.interests) log.debug(`Got ${interests.length} interests`)
 
-    const accomplishments = sections.accomplishments
-      ? await getAccomplishments(page, linkedinUrl)
-      : []
-    if (sections.accomplishments) {
-      log.debug(`Got ${accomplishments.length} accomplishments`)
-    }
+    const accomplishments = sections.accomplishments ? await getAccomplishments(page, linkedinUrl) : []
+    if (sections.accomplishments) log.debug(`Got ${accomplishments.length} accomplishments`)
 
-    const contacts = sections.contacts
-      ? await getContactInfo(page, linkedinUrl)
-      : []
-    if (sections.contacts) {
-      log.debug(`Got ${contacts.length} contacts`)
-    }
+    const contacts = sections.contacts ? await getContactInfo(page, linkedinUrl) : []
+    if (sections.contacts) log.debug(`Got ${contacts.length} contacts`)
 
     const person = createPerson({
       linkedinUrl,

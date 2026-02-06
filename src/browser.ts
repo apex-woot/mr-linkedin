@@ -74,8 +74,7 @@ export class BrowserManager {
   }
 
   async newPage(): Promise<Page> {
-    if (!this._context)
-      throw new Error('Browser context not initialized. Call start() first.')
+    if (!this._context) throw new Error('Browser context not initialized. Call start() first.')
     return await this._context.newPage()
   }
 
@@ -129,11 +128,7 @@ export class BrowserManager {
     log.info(`Session loaded from ${filepath}`)
   }
 
-  async setCookie(
-    name: string,
-    value: string,
-    domain: string = '.linkedin.com',
-  ): Promise<void> {
+  async setCookie(name: string, value: string, domain: string = '.linkedin.com'): Promise<void> {
     if (!this._context) throw new Error('No browser context')
     await this._context.addCookies([{ name, value, domain, path: '/' }])
     log.debug(`Cookie set: ${name}`)

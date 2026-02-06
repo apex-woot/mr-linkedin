@@ -55,26 +55,15 @@ const DEFAULT_VERSION: SelectorVersion = {
       containerSelectors: ['main'],
     },
     interest: {
-      itemSelectors: [
-        '[role="tabpanel"] li',
-        '[role="tabpanel"] .pvs-list__paged-list-item',
-        'main ul > li',
-      ],
+      itemSelectors: ['[role="tabpanel"] li', '[role="tabpanel"] .pvs-list__paged-list-item', 'main ul > li'],
       containerSelectors: ['main'],
     },
     contact: {
-      itemSelectors: [
-        'dialog section',
-        '[role="dialog"] section',
-        '.artdeco-modal section',
-      ],
+      itemSelectors: ['dialog section', '[role="dialog"] section', '.artdeco-modal section'],
       containerSelectors: ['dialog', '[role="dialog"]', '.artdeco-modal'],
     },
     'top-card': {
-      itemSelectors: [
-        'section.artdeco-card[data-member-id]',
-        'main section.artdeco-card',
-      ],
+      itemSelectors: ['section.artdeco-card[data-member-id]', 'main section.artdeco-card'],
       containerSelectors: ['main'],
     },
     about: {
@@ -89,9 +78,7 @@ const DEFAULT_VERSION: SelectorVersion = {
 }
 
 class SelectorRegistry {
-  private versions = new Map<string, SelectorVersion>([
-    [DEFAULT_VERSION.version, DEFAULT_VERSION],
-  ])
+  private versions = new Map<string, SelectorVersion>([[DEFAULT_VERSION.version, DEFAULT_VERSION]])
   private activeVersion = DEFAULT_VERSION.version
 
   getActiveVersion(): SelectorVersion {
@@ -121,9 +108,7 @@ class SelectorRegistry {
   }
 
   async saveToFile(filePath: string, version?: string): Promise<void> {
-    const selected = version
-      ? this.versions.get(version)
-      : this.getActiveVersion()
+    const selected = version ? this.versions.get(version) : this.getActiveVersion()
 
     if (!selected) return
 

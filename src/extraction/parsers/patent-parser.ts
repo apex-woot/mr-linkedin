@@ -31,9 +31,7 @@ export class PatentParser implements Parser<Patent> {
     const descriptionLines = lines
       .slice(1)
       .filter((line) => line !== metadataLine && !looksLikePatentMetadataLine(line))
-    if (descriptionLines.length > 0) {
-      description = descriptionLines.join('\n')
-    }
+    if (descriptionLines.length > 0) description = descriptionLines.join('\n')
 
     const url = input.links
       .filter((link) => {
@@ -83,9 +81,8 @@ function parsePatentSubtitle(subtitle: string): {
     const idPart = parts[0]
 
     if (idPart) {
-      if (idPart.toLowerCase().startsWith('issued')) {
-        issuedDate = idPart.replace(/issued/i, '').trim() || issuedDate
-      } else {
+      if (idPart.toLowerCase().startsWith('issued')) issuedDate = idPart.replace(/issued/i, '').trim() || issuedDate
+      else {
         const match = idPart.match(/^([A-Z]{2})\s+(.+)$/)
         if (match) {
           issuer = match[1]
@@ -98,9 +95,8 @@ function parsePatentSubtitle(subtitle: string): {
 
     const datePart = parts[1]
     if (datePart) {
-      if (datePart.toLowerCase().startsWith('issued')) {
-        issuedDate = datePart.replace(/issued/i, '').trim() || issuedDate
-      } else {
+      if (datePart.toLowerCase().startsWith('issued')) issuedDate = datePart.replace(/issued/i, '').trim() || issuedDate
+      else {
         issuedDate = datePart
       }
     }

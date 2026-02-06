@@ -9,9 +9,7 @@ export class AccomplishmentParser implements Parser<Accomplishment> {
     const texts = input.texts.map((text) => text.trim()).filter(Boolean)
     const title = texts[0]
 
-    if (!title || title.length > 200) {
-      return null
-    }
+    if (!title || title.length > 200) return null
 
     const category = input.context.category ?? 'unknown'
     let issuer: string | undefined
@@ -43,22 +41,16 @@ export class AccomplishmentParser implements Parser<Accomplishment> {
       }
 
       if (!issuedDate && looksLikeDate(text)) {
-        issuedDate = text.includes('·')
-          ? text.split('·')[0]?.trim() || text
-          : text
+        issuedDate = text.includes('·') ? text.split('·')[0]?.trim() || text : text
         continue
       }
 
-      if (!description && looksLikeDescription(text)) {
-        description = text
-      }
+      if (!description && looksLikeDescription(text)) description = text
     }
 
     const credentialUrl =
-      input.links.find(
-        (link) =>
-          link.url.includes('credential') || link.url.includes('verify'),
-      )?.url ?? input.links[0]?.url
+      input.links.find((link) => link.url.includes('credential') || link.url.includes('verify'))?.url ??
+      input.links[0]?.url
 
     return {
       category,

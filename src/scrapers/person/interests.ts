@@ -2,31 +2,19 @@ import type { Page } from 'playwright'
 import { InterestParser } from '../../extraction/parsers'
 import { InterestPageExtractor } from '../../extraction/page-extractors'
 import { ExtractionPipeline } from '../../extraction/pipeline'
-import {
-  AriaTextExtractor,
-  RawTextExtractor,
-  SemanticTextExtractor,
-} from '../../extraction/text-extractors'
+import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import type { Interest } from '../../models'
 import { log } from '../../utils/logger'
 
-export async function getInterests(
-  page: Page,
-  baseUrl: string,
-): Promise<Interest[]> {
+export async function getInterests(page: Page, baseUrl: string): Promise<Interest[]> {
   try {
     const pipeline = new ExtractionPipeline<Interest>({
       pageExtractor: new InterestPageExtractor(),
-      textExtractors: [
-        new AriaTextExtractor(),
-        new SemanticTextExtractor(),
-        new RawTextExtractor(),
-      ],
+      textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new InterestParser(),
       confidenceThreshold: 0.25,
       captureHtmlOnFailure: true,
-      deduplicateKey: (interest) =>
-        `${interest.category}|${interest.name}|${interest.linkedinUrl || ''}`,
+      deduplicateKey: (interest) => `${interest.category}|${interest.name}|${interest.linkedinUrl || ''}`,
     })
 
     const result = await pipeline.extract({ page, baseUrl })

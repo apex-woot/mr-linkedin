@@ -6,11 +6,7 @@ import {
   scrollSection,
   sectionHasContent,
 } from './helpers'
-import type {
-  PageExtractor,
-  PageExtractorConfig,
-  PageExtractorResult,
-} from './types'
+import type { PageExtractor, PageExtractorConfig, PageExtractorResult } from './types'
 
 export class PatentPageExtractor implements PageExtractor {
   readonly sectionName = 'patent'
@@ -31,14 +27,10 @@ export class PatentPageExtractor implements PageExtractor {
       config.focusWait ?? SCRAPING_CONSTANTS.PATENTS_FOCUS_WAIT,
     )
 
-    if (!didNavigate) {
-      return { kind: 'list', items: [] }
-    }
+    if (!didNavigate) return { kind: 'list', items: [] }
 
     const hasContent = await sectionHasContent(config.page)
-    if (!hasContent) {
-      return { kind: 'list', items: [] }
-    }
+    if (!hasContent) return { kind: 'list', items: [] }
 
     await scrollSection(config.page, {
       pauseTime: config.scroll?.pauseTime ?? SCRAPING_CONSTANTS.PATENTS_SCROLL_PAUSE,
@@ -54,9 +46,7 @@ export class PatentPageExtractor implements PageExtractor {
 
   private async extractFromMainPage(config: PageExtractorConfig) {
     const section = await findSectionByHeading(config.page, 'Patents')
-    if (!section) {
-      return []
-    }
+    if (!section) return []
 
     return await section.locator('ul > li, ol > li').all()
   }

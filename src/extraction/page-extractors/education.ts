@@ -1,15 +1,6 @@
 import { SCRAPING_CONSTANTS } from '../../config/constants'
-import {
-  findItemsWithFallback,
-  findSectionByHeading,
-  navigateToSection,
-  scrollSection,
-} from './helpers'
-import type {
-  PageExtractor,
-  PageExtractorConfig,
-  PageExtractorResult,
-} from './types'
+import { findItemsWithFallback, findSectionByHeading, navigateToSection, scrollSection } from './helpers'
+import type { PageExtractor, PageExtractorConfig, PageExtractorResult } from './types'
 
 export class EducationPageExtractor implements PageExtractor {
   readonly sectionName = 'education'
@@ -30,9 +21,7 @@ export class EducationPageExtractor implements PageExtractor {
       config.focusWait ?? SCRAPING_CONSTANTS.EDUCATION_FOCUS_WAIT,
     )
 
-    if (!didNavigate) {
-      return { kind: 'list', items: [] }
-    }
+    if (!didNavigate) return { kind: 'list', items: [] }
 
     await scrollSection(config.page, {
       pauseTime: config.scroll?.pauseTime ?? SCRAPING_CONSTANTS.EDUCATION_SCROLL_PAUSE,
@@ -48,9 +37,7 @@ export class EducationPageExtractor implements PageExtractor {
 
   private async extractFromMainPage(config: PageExtractorConfig) {
     const section = await findSectionByHeading(config.page, 'Education')
-    if (!section) {
-      return []
-    }
+    if (!section) return []
 
     return await section.locator('ul > li, ol > li').all()
   }

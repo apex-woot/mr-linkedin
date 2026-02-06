@@ -8,14 +8,10 @@ export class InterestParser implements Parser<Interest> {
   parse(input: ParseInput): Interest | null {
     const texts = input.texts.map((text) => text.trim()).filter(Boolean)
     const name = texts[0]
-    if (!name) {
-      return null
-    }
+    if (!name) return null
 
     const linkedinUrl = input.links[0]?.url
-    if (!linkedinUrl) {
-      return null
-    }
+    if (!linkedinUrl) return null
 
     return {
       name,

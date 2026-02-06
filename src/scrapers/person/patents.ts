@@ -2,27 +2,16 @@ import type { Page } from 'playwright'
 import { PatentParser } from '../../extraction/parsers'
 import { PatentPageExtractor } from '../../extraction/page-extractors'
 import { ExtractionPipeline } from '../../extraction/pipeline'
-import {
-  AriaTextExtractor,
-  RawTextExtractor,
-  SemanticTextExtractor,
-} from '../../extraction/text-extractors'
+import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import type { Patent } from '../../models/person'
 import { log } from '../../utils/logger'
 import { deduplicateItems } from './common-patterns'
 
-export async function getPatents(
-  page: Page,
-  baseUrl: string,
-): Promise<Patent[]> {
+export async function getPatents(page: Page, baseUrl: string): Promise<Patent[]> {
   try {
     const pipeline = new ExtractionPipeline<Patent>({
       pageExtractor: new PatentPageExtractor(),
-      textExtractors: [
-        new AriaTextExtractor(),
-        new SemanticTextExtractor(),
-        new RawTextExtractor(),
-      ],
+      textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new PatentParser(),
       confidenceThreshold: 0.25,
       captureHtmlOnFailure: true,

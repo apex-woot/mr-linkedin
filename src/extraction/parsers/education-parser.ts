@@ -7,14 +7,10 @@ export class EducationParser implements Parser<Education> {
 
   parse(input: ParseInput): Education | null {
     const texts = input.texts.map((t) => t.trim()).filter(Boolean)
-    if (texts.length === 0) {
-      return null
-    }
+    if (texts.length === 0) return null
 
     const institutionName = texts[0] ?? ''
-    if (!institutionName) {
-      return null
-    }
+    if (!institutionName) return null
 
     let degree: string | undefined
     let dateStr = ''
@@ -24,16 +20,14 @@ export class EducationParser implements Parser<Education> {
       dateStr = texts[2] ?? ''
     } else if (texts.length === 2) {
       const second = texts[1] ?? ''
-      if (second.includes(' - ') || /\d/.test(second)) {
-        dateStr = second
-      } else {
+      if (second.includes(' - ') || /\d/.test(second)) dateStr = second
+      else {
         degree = second || undefined
       }
     }
 
     const { fromDate, toDate } = parseDateRange(dateStr)
-    const description =
-      texts.length > 3 ? texts.slice(3).join('\n').trim() || undefined : undefined
+    const description = texts.length > 3 ? texts.slice(3).join('\n').trim() || undefined : undefined
 
     return {
       institutionName,

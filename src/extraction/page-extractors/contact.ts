@@ -1,10 +1,5 @@
 import type { Locator } from 'playwright'
-import type {
-  PageExtractor,
-  PageExtractorConfig,
-  PageExtractorResult,
-  RawSection,
-} from './types'
+import type { PageExtractor, PageExtractorConfig, PageExtractorResult, RawSection } from './types'
 
 const DIALOG_SELECTOR = 'dialog, [role="dialog"], .artdeco-modal'
 const CONTACT_INFO_TRIGGER_SELECTORS = [
@@ -18,22 +13,16 @@ export class ContactPageExtractor implements PageExtractor {
 
   async extract(config: PageExtractorConfig): Promise<PageExtractorResult> {
     const dialog = await this.openContactInfoDialog(config)
-    if (!dialog) {
-      return { kind: 'raw', data: [] }
-    }
+    if (!dialog) return { kind: 'raw', data: [] }
 
     const data = await this.extractRawSections(dialog)
     return { kind: 'raw', data }
   }
 
-  private async openContactInfoDialog(
-    config: PageExtractorConfig,
-  ): Promise<Locator | null> {
+  private async openContactInfoDialog(config: PageExtractorConfig): Promise<Locator | null> {
     for (const selector of CONTACT_INFO_TRIGGER_SELECTORS) {
       const trigger = config.page.locator(selector).first()
-      if ((await trigger.count()) === 0) {
-        continue
-      }
+      if ((await trigger.count()) === 0) continue
 
       try {
         await trigger.scrollIntoViewIfNeeded()
@@ -55,9 +44,7 @@ export class ContactPageExtractor implements PageExtractor {
   async extractRawSections(dialog: Locator): Promise<RawSection[]> {
     return await dialog.evaluate((root) => {
       const normalize = (input: string | null | undefined): string => {
-        if (!input) {
-          return ''
-        }
+        if (!input) return ''
         return input.replace(/\s+/g, ' ').trim()
       }
 
@@ -70,10 +57,7 @@ export class ContactPageExtractor implements PageExtractor {
           const headingCount = current.querySelectorAll('h3').length
           const hasAnchor = current.querySelector('a') !== null
 
-          if (
-            headingCount === 1 &&
-            (hasAnchor || currentText.length > headingText.length + 2)
-          ) {
+          if (headingCount === 1 && (hasAnchor || currentText.length > headingText.length + 2)) {
             return current
           }
 
@@ -88,9 +72,7 @@ export class ContactPageExtractor implements PageExtractor {
       return headingNodes
         .map((headingNode) => {
           const heading = normalize(headingNode.textContent).toLowerCase()
-          if (!heading) {
-            return null
-          }
+          if (!heading) return null
 
           const container = findContainer(headingNode)
           const text = normalize(container.textContent)
@@ -102,12 +84,10 @@ export class ContactPageExtractor implements PageExtractor {
             })
             .filter((value): value is string => !!value)
 
-          const anchors = Array.from(container.querySelectorAll('a')).map(
-            (anchor) => ({
-              href: normalize(anchor.getAttribute('href')) || null,
-              text: normalize(anchor.textContent) || null,
-            }),
-          )
+          const anchors = Array.from(container.querySelectorAll('a')).map((anchor) => ({
+            href: normalize(anchor.getAttribute('href')) || null,
+            text: normalize(anchor.textContent) || null,
+          }))
 
           return {
             heading,

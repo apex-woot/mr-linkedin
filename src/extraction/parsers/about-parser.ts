@@ -9,9 +9,7 @@ export class AboutParser implements Parser<string> {
       .filter(Boolean)
       .filter((text) => text.toLowerCase() !== 'about')
 
-    if (texts.length === 0) {
-      return null
-    }
+    if (texts.length === 0) return null
 
     return texts.join('\n').trim() || null
   }

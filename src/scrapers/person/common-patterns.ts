@@ -53,9 +53,7 @@ export async function parseItems<T>(
     try {
       // Check if this item should be skipped
       if (options.shouldSkip && (await options.shouldSkip(item, idx))) {
-        if (options.logSkipped) {
-          log.skip(`Skipped ${options.itemType} at index ${idx}`)
-        }
+        if (options.logSkipped) log.skip(`Skipped ${options.itemType} at index ${idx}`)
         continue
       }
 
@@ -63,15 +61,11 @@ export async function parseItems<T>(
       const result = await parser(item, idx)
       if (result) {
         results.push(result)
-        if (options.onSuccess) {
-          options.onSuccess(result, idx)
-        }
+        if (options.onSuccess) options.onSuccess(result, idx)
       }
     } catch (e) {
       log.debug(`Error parsing ${options.itemType} at index ${idx}: ${e}`)
-      if (options.onError) {
-        options.onError(e, idx)
-      }
+      if (options.onError) options.onError(e, idx)
     }
   }
 
@@ -93,10 +87,7 @@ export async function parseItems<T>(
  * )
  * ```
  */
-export function deduplicateItems<T>(
-  items: T[],
-  keyExtractor: (item: T) => string,
-): T[] {
+export function deduplicateItems<T>(items: T[], keyExtractor: (item: T) => string): T[] {
   const seen = new Set<string>()
   return items.filter((item) => {
     const key = keyExtractor(item)

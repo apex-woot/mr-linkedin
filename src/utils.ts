@@ -23,10 +23,7 @@ export async function retryAsync<T>(
 
       if (shouldRetry && attempt < maxAttempts - 1) {
         const waitTime = backoff ** attempt
-        log.warning(
-          `Attempt ${attempt + 1}/${maxAttempts} failed: ${e.message}. ` +
-            `Retrying in ${waitTime}s...`,
-        )
+        log.warning(`Attempt ${attempt + 1}/${maxAttempts} failed: ${e.message}. ` + `Retrying in ${waitTime}s...`)
         await new Promise((resolve) => setTimeout(resolve, waitTime * 1000))
       } else {
         break
@@ -40,38 +37,23 @@ export async function retryAsync<T>(
 export async function detectRateLimit(page: Page): Promise<void> {
   const currentUrl = page.url()
 
-  if (
-    currentUrl.includes('linkedin.com/checkpoint') ||
-    currentUrl.includes('authwall')
-  ) {
+  if (currentUrl.includes('linkedin.com/checkpoint') || currentUrl.includes('authwall')) {
     throw new RateLimitError(
-      'LinkedIn security checkpoint detected. ' +
-        'You may need to verify your identity or wait before continuing.',
+      'LinkedIn security checkpoint detected. ' + 'You may need to verify your identity or wait before continuing.',
       3600, // 1 hour
     )
   }
 
   try {
-    const captchaCount = await page
-      .locator('iframe[title*="captcha" i], iframe[src*="captcha" i]')
-      .count()
-    if (captchaCount > 0)
-      throw new RateLimitError(
-        'CAPTCHA challenge detected. Manual intervention required.',
-        3600,
-      )
+    const captchaCount = await page.locator('iframe[title*="captcha" i], iframe[src*="captcha" i]').count()
+    if (captchaCount > 0) throw new RateLimitError('CAPTCHA challenge detected. Manual intervention required.', 3600)
   } catch {}
 
   try {
     const bodyText = await page.locator('body').textContent({ timeout: 1000 })
     if (bodyText) {
       const bodyLower = bodyText.toLowerCase()
-      const limitPhrases = [
-        'too many requests',
-        'rate limit',
-        'slow down',
-        'try again later',
-      ]
+      const limitPhrases = ['too many requests', 'rate limit', 'slow down', 'try again later']
       if (limitPhrases.some((phrase) => bodyLower.includes(phrase))) {
         throw new RateLimitError(
           'Rate limit message detected on page.',
@@ -112,11 +94,9 @@ export async function waitForElementSmart(
 }
 
 function getSelectorSuggestions(selector: string): string {
-  if (selector.includes('#')) {
-    return 'Tip: ID selectors may be dynamic. Consider using data attributes or text content.'
-  } else if (selector.includes('pv-') || selector.includes('artdeco')) {
+  if (selector.includes('#')) return 'Tip: ID selectors may be dynamic. Consider using data attributes or text content.'
+  else if (selector.includes('pv-') || selector.includes('artdeco'))
     return 'Tip: LinkedIn class names change frequently. This selector may need updating.'
-  }
   return ''
 }
 
@@ -131,9 +111,7 @@ export async function extractTextSafe(
     const text = await element.textContent({ timeout })
     return text ? text.trim() : defaultValue
   } catch {
-    log.debug(
-      `Element not found: ${selector}, returning default: ${defaultValue}`,
-    )
+    log.debug(`Element not found: ${selector}, returning default: ${defaultValue}`)
     return defaultValue
   }
 }
@@ -143,16 +121,10 @@ export async function extractTextSafe(
  * Stops when the height remains stable for 2 consecutive checks.
  * Hard cutoff at 10 scrolls.
  */
-export async function scrollToBottom(
-  page: Page,
-  pauseTime: number = 1.0,
-  maxScrolls: number = 10,
-): Promise<void> {
+export async function scrollToBottom(page: Page, pauseTime: number = 1.0, maxScrolls: number = 10): Promise<void> {
   const cappedMaxScrolls = Math.min(maxScrolls, 10)
   const viewport = page.viewportSize()
-  if (viewport) {
-    await page.mouse.move(viewport.width / 2, viewport.height / 2)
-  }
+  if (viewport) await page.mouse.move(viewport.width / 2, viewport.height / 2)
 
   let stableCount = 0
   const stabilityThreshold = 2
@@ -173,10 +145,7 @@ export async function scrollToBottom(
 
         for (const el of allElements) {
           const style = window.getComputedStyle(el)
-          if (
-            (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
-            el.scrollHeight > el.clientHeight
-          ) {
+          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
             if (el.scrollHeight > maxScrollHeight) {
               maxScrollHeight = el.scrollHeight
               bestCandidate = el
@@ -190,13 +159,10 @@ export async function scrollToBottom(
       const target = findScrollableElement()
       const isWindow = target === window
 
-      const currentScrollHeight = isWindow
-        ? document.documentElement.scrollHeight
-        : (target as Element).scrollHeight
+      const currentScrollHeight = isWindow ? document.documentElement.scrollHeight : (target as Element).scrollHeight
 
-      if (isWindow) {
-        window.scrollTo(0, document.documentElement.scrollHeight)
-      } else {
+      if (isWindow) window.scrollTo(0, document.documentElement.scrollHeight)
+      else {
         const el = target as Element
         el.scrollTop = el.scrollHeight
       }
@@ -225,10 +191,7 @@ export async function scrollToBottom(
 
         for (const el of allElements) {
           const style = window.getComputedStyle(el)
-          if (
-            (style.overflowY === 'auto' || style.overflowY === 'scroll') &&
-            el.scrollHeight > el.clientHeight
-          ) {
+          if ((style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
             if (el.scrollHeight > maxScrollHeight) {
               maxScrollHeight = el.scrollHeight
               bestCandidate = el
@@ -243,15 +206,12 @@ export async function scrollToBottom(
       const isWindow = target === window
 
       return {
-        scrollHeight: isWindow
-          ? document.documentElement.scrollHeight
-          : (target as Element).scrollHeight,
+        scrollHeight: isWindow ? document.documentElement.scrollHeight : (target as Element).scrollHeight,
         scrollTop: isWindow ? window.scrollY : (target as Element).scrollTop,
       }
     })
 
-    const heightDidNotChange =
-      newStats.scrollHeight === scrollStats.scrollHeight
+    const heightDidNotChange = newStats.scrollHeight === scrollStats.scrollHeight
 
     log.info(
       `Scroll ${i + 1}/${cappedMaxScrolls}: Position=${Math.round(newStats.scrollTop)}, Total Height=${newStats.scrollHeight}`,
@@ -259,17 +219,13 @@ export async function scrollToBottom(
 
     if (heightDidNotChange) {
       stableCount++
-      log.debug(
-        `Height stable (${newStats.scrollHeight}). Stability check: ${stableCount}/${stabilityThreshold}`,
-      )
+      log.debug(`Height stable (${newStats.scrollHeight}). Stability check: ${stableCount}/${stabilityThreshold}`)
     } else {
       stableCount = 0
     }
 
     if (stableCount >= stabilityThreshold) {
-      log.info(
-        `Reached end of page (height stable for ${stabilityThreshold} checks).`,
-      )
+      log.info(`Reached end of page (height stable for ${stabilityThreshold} checks).`)
       break
     }
   }
@@ -279,17 +235,12 @@ export async function scrollToHalf(page: Page): Promise<void> {
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2))
 }
 
-export async function clickSeeMoreButtons(
-  page: Page,
-  maxAttempts: number = 10,
-): Promise<number> {
+export async function clickSeeMoreButtons(page: Page, maxAttempts: number = 10): Promise<number> {
   let clicked = 0
   for (let i = 0; i < maxAttempts; i++) {
     try {
       const seeMore = page
-        .locator(
-          'button:has-text("See more"), button:has-text("Show more"), button:has-text("show all")',
-        )
+        .locator('button:has-text("See more"), button:has-text("Show more"), button:has-text("show all")')
         .first()
 
       if (await seeMore.isVisible({ timeout: 1000 })) {
@@ -304,9 +255,7 @@ export async function clickSeeMoreButtons(
     }
   }
 
-  if (clicked > 0) {
-    log.debug(`Clicked ${clicked} 'see more' buttons`)
-  }
+  if (clicked > 0) log.debug(`Clicked ${clicked} 'see more' buttons`)
 
   return clicked
 }
@@ -314,9 +263,7 @@ export async function clickSeeMoreButtons(
 export async function handleModalClose(page: Page): Promise<boolean> {
   try {
     const closeButton = page
-      .locator(
-        'button[aria-label="Dismiss"], button[aria-label="Close"], button.artdeco-modal__dismiss',
-      )
+      .locator('button[aria-label="Dismiss"], button[aria-label="Close"], button.artdeco-modal__dismiss')
       .first()
 
     if (await closeButton.isVisible({ timeout: 1000 })) {

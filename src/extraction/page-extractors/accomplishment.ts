@@ -1,13 +1,5 @@
-import {
-  findItemsWithFallback,
-  navigateToSection,
-  sectionHasContent,
-} from './helpers'
-import type {
-  PageExtractor,
-  PageExtractorConfig,
-  PageExtractorResult,
-} from './types'
+import { findItemsWithFallback, navigateToSection, sectionHasContent } from './helpers'
+import type { PageExtractor, PageExtractorConfig, PageExtractorResult } from './types'
 
 export interface AccomplishmentPageExtractorOptions {
   urlPath: string
@@ -33,14 +25,10 @@ export class AccomplishmentPageExtractor implements PageExtractor {
       config.focusWait ?? 1,
     )
 
-    if (!didNavigate) {
-      return { kind: 'list', items: [] }
-    }
+    if (!didNavigate) return { kind: 'list', items: [] }
 
     const hasContent = await sectionHasContent(config.page)
-    if (!hasContent) {
-      return { kind: 'list', items: [] }
-    }
+    if (!hasContent) return { kind: 'list', items: [] }
 
     const items = await findItemsWithFallback(config.page, this.sectionName)
     return {

@@ -6,11 +6,7 @@ describe('TopCardParser', () => {
 
   test('parses name/headline/origin and strips contact info suffix', () => {
     const parsed = parser.parse({
-      texts: [
-        'Alex Doe',
-        'Founder',
-        'Austin, Texas, United States Contact info',
-      ],
+      texts: ['Alex Doe', 'Founder', 'Austin, Texas, United States Contact info'],
       links: [],
       context: {},
     })

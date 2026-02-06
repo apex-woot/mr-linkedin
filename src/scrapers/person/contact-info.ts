@@ -2,26 +2,15 @@ import type { Locator, Page } from 'playwright'
 import { ContactParser } from '../../extraction/parsers'
 import { ContactPageExtractor } from '../../extraction/page-extractors'
 import { ExtractionPipeline } from '../../extraction/pipeline'
-import {
-  AriaTextExtractor,
-  RawTextExtractor,
-  SemanticTextExtractor,
-} from '../../extraction/text-extractors'
+import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import type { Contact } from '../../models'
 import { log } from '../../utils/logger'
 
-export async function getContactInfo(
-  page: Page,
-  baseUrl: string,
-): Promise<Contact[]> {
+export async function getContactInfo(page: Page, baseUrl: string): Promise<Contact[]> {
   try {
     const pipeline = new ExtractionPipeline<Contact>({
       pageExtractor: new ContactPageExtractor(),
-      textExtractors: [
-        new AriaTextExtractor(),
-        new SemanticTextExtractor(),
-        new RawTextExtractor(),
-      ],
+      textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
       parser: new ContactParser(),
       confidenceThreshold: 0,
       captureHtmlOnFailure: true,
@@ -38,9 +27,7 @@ export async function getContactInfo(
   }
 }
 
-export async function extractContactsFromDialog(
-  dialog: Locator,
-): Promise<Contact[]> {
+export async function extractContactsFromDialog(dialog: Locator): Promise<Contact[]> {
   const extractor = new ContactPageExtractor()
   const rawSections = await extractor.extractRawSections(dialog)
   return new ContactParser().parseRaw(rawSections)

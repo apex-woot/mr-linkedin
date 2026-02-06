@@ -4,11 +4,7 @@ import { deduplicateItems, parseItems } from './common-patterns'
 
 describe('parseItems', () => {
   test('parses all items successfully', async () => {
-    const mockItems = [
-      createMockLocator('item1'),
-      createMockLocator('item2'),
-      createMockLocator('item3'),
-    ]
+    const mockItems = [createMockLocator('item1'), createMockLocator('item2'), createMockLocator('item3')]
 
     const parser = mock(async (item: Locator, idx: number) => ({
       name: await item.textContent(),
@@ -25,11 +21,7 @@ describe('parseItems', () => {
   })
 
   test('skips null results from parser', async () => {
-    const mockItems = [
-      createMockLocator('item1'),
-      createMockLocator('item2'),
-      createMockLocator('item3'),
-    ]
+    const mockItems = [createMockLocator('item1'), createMockLocator('item2'), createMockLocator('item3')]
 
     const parser = async (item: Locator) => {
       const text = await item.textContent()
@@ -44,11 +36,7 @@ describe('parseItems', () => {
   })
 
   test('continues parsing after errors', async () => {
-    const mockItems = [
-      createMockLocator('item1'),
-      createMockLocator('item2'),
-      createMockLocator('item3'),
-    ]
+    const mockItems = [createMockLocator('item1'), createMockLocator('item2'), createMockLocator('item3')]
 
     const parser = async (item: Locator) => {
       const text = await item.textContent()
@@ -64,11 +52,7 @@ describe('parseItems', () => {
   })
 
   test('respects shouldSkip predicate', async () => {
-    const mockItems = [
-      createMockLocator('item1'),
-      createMockLocator('skip-me'),
-      createMockLocator('item3'),
-    ]
+    const mockItems = [createMockLocator('item1'), createMockLocator('skip-me'), createMockLocator('item3')]
 
     const parser = async (item: Locator) => ({
       name: await item.textContent(),
@@ -166,10 +150,7 @@ describe('deduplicateItems', () => {
       { company: 'A', title: 'Manager' }, // Different title, not duplicate
     ]
 
-    const result = deduplicateItems(
-      items,
-      (item) => `${item.company}|${item.title}`,
-    )
+    const result = deduplicateItems(items, (item) => `${item.company}|${item.title}`)
 
     expect(result).toHaveLength(3)
   })

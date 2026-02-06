@@ -20,29 +20,19 @@ export class ContactParser implements RawParser<Contact> {
 
     for (const section of sections) {
       const contactType = mapContactHeadingToType(section.heading)
-      if (!contactType) {
-        continue
-      }
+      if (!contactType) continue
 
       const label = section.labels[0]
 
-      if (
-        contactType === 'birthday' ||
-        contactType === 'phone' ||
-        contactType === 'address'
-      ) {
+      if (contactType === 'birthday' || contactType === 'phone' || contactType === 'address') {
         const value = extractPlainValue(section.text, section.heading)
-        if (value) {
-          contacts.push({ type: contactType, value })
-        }
+        if (value) contacts.push({ type: contactType, value })
         continue
       }
 
       for (const anchor of section.anchors) {
         const normalized = normalizeAnchor(anchor)
-        if (!normalized) {
-          continue
-        }
+        if (!normalized) continue
 
         if (contactType === 'email') {
           const value = normalized.href?.startsWith('mailto:')
@@ -50,11 +40,7 @@ export class ContactParser implements RawParser<Contact> {
             : normalized.text
 
           if (value) {
-            contacts.push(
-              label
-                ? { type: 'email', value, label }
-                : { type: 'email', value },
-            )
+            contacts.push(label ? { type: 'email', value, label } : { type: 'email', value })
           }
           continue
         }
@@ -72,11 +58,7 @@ export class ContactParser implements RawParser<Contact> {
 
         const value = normalized.href || normalized.text
         if (value) {
-          contacts.push(
-            label
-              ? { type: contactType, value, label }
-              : { type: contactType, value },
-          )
+          contacts.push(label ? { type: contactType, value, label } : { type: contactType, value })
         }
       }
     }
@@ -93,18 +75,14 @@ function normalizeAnchor(anchor: RawAnchor): RawAnchor | null {
   const href = normalizeValue(anchor.href)
   const text = normalizeValue(anchor.text)
 
-  if (!href && !text) {
-    return null
-  }
+  if (!href && !text) return null
 
   return { href, text }
 }
 
 function extractPlainValue(text: string, heading: string): string | null {
   let cleaned = normalizeValue(text)
-  if (!cleaned) {
-    return null
-  }
+  if (!cleaned) return null
 
   const headingRegex = new RegExp(`^${escapeRegex(heading)}\\s*`, 'i')
   cleaned = cleaned.replace(headingRegex, '').trim()
@@ -119,9 +97,7 @@ function dedupeContacts(contacts: Contact[]): Contact[] {
 
   for (const contact of contacts) {
     const key = `${contact.type}|${contact.value}`
-    if (seen.has(key)) {
-      continue
-    }
+    if (seen.has(key)) continue
     seen.add(key)
     deduped.push(contact)
   }
@@ -130,9 +106,7 @@ function dedupeContacts(contacts: Contact[]): Contact[] {
 }
 
 function normalizeValue(value: string | null | undefined): string | null {
-  if (!value) {
-    return null
-  }
+  if (!value) return null
 
   const normalized = value.replace(/\s+/g, ' ').trim()
   return normalized || null

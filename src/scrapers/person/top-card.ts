@@ -2,11 +2,7 @@ import type { Page } from 'playwright'
 import { TopCardParser, type TopCardResult } from '../../extraction/parsers'
 import { TopCardPageExtractor } from '../../extraction/page-extractors'
 import { ExtractionPipeline } from '../../extraction/pipeline'
-import {
-  AriaTextExtractor,
-  RawTextExtractor,
-  SemanticTextExtractor,
-} from '../../extraction/text-extractors'
+import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 
 export interface TopCardPersonInfo {
   name: string
@@ -14,16 +10,10 @@ export interface TopCardPersonInfo {
   origin: string | null
 }
 
-export async function extractTopCardFromPage(
-  page: Page,
-): Promise<TopCardPersonInfo> {
+export async function extractTopCardFromPage(page: Page): Promise<TopCardPersonInfo> {
   const pipeline = new ExtractionPipeline<TopCardResult>({
     pageExtractor: new TopCardPageExtractor(),
-    textExtractors: [
-      new AriaTextExtractor(),
-      new SemanticTextExtractor(),
-      new RawTextExtractor(),
-    ],
+    textExtractors: [new AriaTextExtractor(), new SemanticTextExtractor(), new RawTextExtractor()],
     parser: new TopCardParser(),
     confidenceThreshold: 0.15,
     captureHtmlOnFailure: true,
