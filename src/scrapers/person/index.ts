@@ -12,12 +12,12 @@ import {
   waitAndFocus,
 } from '../utils'
 import { getAccomplishments } from './accomplishments'
-import { getContacts } from './contacts'
+import { getContactInfo } from './contact-info'
 import { getEducations } from './educations'
 import { getExperiences } from './experiences'
 import { getInterests } from './interests'
 import { getPatents } from './patents'
-import { checkOpenToWork, getAbout, getNameAndLocation } from './profile'
+import { checkOpenToWork, getAbout, getTopCardProfileInfo } from './profile'
 
 export interface PersonScraperOptions {
   callback?: ProgressCallback
@@ -62,7 +62,7 @@ export async function scrapePerson(
     await page.waitForSelector('main', { timeout: 10000 })
     await waitAndFocus(page, 1)
 
-    const { name, location } = await getNameAndLocation(page)
+    const { name, location, headline, origin } = await getTopCardProfileInfo(page)
     log.debug(`Got name: ${name}`)
 
     const openToWork = await checkOpenToWork(page)
@@ -111,7 +111,7 @@ export async function scrapePerson(
     }
 
     const contacts = sections.contacts
-      ? await getContacts(page, linkedinUrl)
+      ? await getContactInfo(page, linkedinUrl)
       : []
     if (sections.contacts) {
       log.debug(`Got ${contacts.length} contacts`)
@@ -120,7 +120,9 @@ export async function scrapePerson(
     const person = createPerson({
       linkedinUrl,
       name,
-      location: location ?? undefined,
+      location: origin ?? location ?? undefined,
+      headline: headline ?? undefined,
+      origin: origin ?? undefined,
       about: about ?? undefined,
       openToWork,
       experiences,

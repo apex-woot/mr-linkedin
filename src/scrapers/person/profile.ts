@@ -1,48 +1,32 @@
 import type { Page } from 'playwright'
-import {
-  ABOUT_SELECTORS,
-  LOCATION_SELECTORS,
-  NAME_SELECTORS,
-  TEST_ID_SELECTORS,
-} from '../../config/selectors'
+import { ABOUT_SELECTORS, TEST_ID_SELECTORS } from '../../config/selectors'
 import { log } from '../../utils/logger'
 import { trySelectors, trySelectorsForText } from '../../utils/selector-utils'
 import { getAttributeSafe } from '../utils'
+import { extractTopCardFromPage } from './top-card'
 
-export async function getNameAndLocation(
+export interface TopCardProfileInfo {
+  name: string
+  location: string | null
+  headline: string | null
+  origin: string | null
+}
+
+export async function getTopCardProfileInfo(
   page: Page,
-): Promise<{ name: string; location: string | null }> {
+): Promise<TopCardProfileInfo> {
   try {
-    // Use new selector system with fallbacks
-    const nameResult = await trySelectorsForText(
-      page,
-      NAME_SELECTORS,
-      'Unknown',
-    )
-    const locationResult = await trySelectorsForText(
-      page,
-      LOCATION_SELECTORS,
-      '',
-    )
-
-    if (nameResult.usedFallback) {
-      log.warning(
-        `Name found using fallback selector: ${nameResult.usedSelector}`,
-      )
-    }
-    if (locationResult.usedFallback) {
-      log.warning(
-        `Location found using fallback selector: ${locationResult.usedSelector}`,
-      )
-    }
+    const topCardInfo = await extractTopCardFromPage(page)
 
     return {
-      name: nameResult.value,
-      location: locationResult.value || null,
+      name: topCardInfo.name,
+      location: topCardInfo.origin,
+      headline: topCardInfo.headline,
+      origin: topCardInfo.origin,
     }
   } catch (e) {
     log.warning(`Error getting name/location: ${e}`)
-    return { name: 'Unknown', location: null }
+    return { name: 'Unknown', location: null, headline: null, origin: null }
   }
 }
 

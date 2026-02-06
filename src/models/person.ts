@@ -4,6 +4,7 @@ export const InterestSchema = z.object({
   name: z.string(),
   category: z.string(),
   linkedinUrl: z.string().optional(),
+  plainText: z.string().optional(),
 })
 
 export type Interest = z.infer<typeof InterestSchema>
@@ -12,6 +13,7 @@ export const ContactSchema = z.object({
   type: z.string(),
   value: z.string(),
   label: z.string().optional(),
+  plainText: z.string().optional(),
 })
 
 export type Contact = z.infer<typeof ContactSchema>
@@ -24,6 +26,7 @@ export const PositionSchema = z.object({
   duration: z.string().optional(),
   location: z.string().optional(),
   employmentType: z.string().optional(),
+  plainText: z.string().optional(),
 })
 
 export type Position = z.infer<typeof PositionSchema>
@@ -31,6 +34,7 @@ export type Position = z.infer<typeof PositionSchema>
 export const ExperienceSchema = z.object({
   company: z.string().optional(),
   companyUrl: z.string().optional(),
+  plainText: z.string().optional(),
   positions: z.array(PositionSchema).default([]),
 })
 
@@ -43,6 +47,7 @@ export const EducationSchema = z.object({
   fromDate: z.string().optional(),
   toDate: z.string().optional(),
   description: z.string().optional(),
+  plainText: z.string().optional(),
 })
 
 export type Education = z.infer<typeof EducationSchema>
@@ -55,6 +60,7 @@ export const AccomplishmentSchema = z.object({
   credentialId: z.string().optional(),
   credentialUrl: z.string().optional(),
   description: z.string().optional(),
+  plainText: z.string().optional(),
 })
 
 export type Accomplishment = z.infer<typeof AccomplishmentSchema>
@@ -66,6 +72,7 @@ export const PatentSchema = z.object({
   issuedDate: z.string().optional(),
   url: z.string().optional(),
   description: z.string().optional(),
+  plainText: z.string().optional(),
 })
 
 export type Patent = z.infer<typeof PatentSchema>
@@ -75,6 +82,8 @@ export const PersonSchema = z.object({
     message: 'Must be a valid LinkedIn profile URL (contains /in/)',
   }),
   name: z.string().optional(),
+  headline: z.string().optional(),
+  origin: z.string().optional(),
   location: z.string().optional(),
   about: z.string().optional(),
   openToWork: z.boolean().default(false),
@@ -123,6 +132,8 @@ export function getPersonJobTitle(person: PersonData): string | undefined {
 export function personToString(person: PersonData): string {
   return (
     `<Person ${person.name}\n` +
+    `  Headline: ${person.headline}\n` +
+    `  Origin: ${person.origin}\n` +
     `  Company: ${getPersonCompany(person)}\n` +
     `  Title: ${getPersonJobTitle(person)}\n` +
     `  Location: ${person.location}\n` +
