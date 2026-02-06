@@ -1,4 +1,15 @@
-import type { HealthReport, PipelineResult } from './types'
+import type { PipelineResult } from './pipeline'
+
+export type HealthStatus = 'healthy' | 'degraded' | 'broken'
+
+export interface HealthReport {
+  section: string
+  status: HealthStatus
+  textExtractor: string | null
+  confidence: number
+  itemCount: number
+  message: string
+}
 
 export interface HealthThresholds {
   healthyConfidence: number
@@ -20,17 +31,14 @@ export function buildHealthReport<T>(
     ...thresholds,
   }
 
-  const status = computeStatus(
-    result.confidence,
-    result.items.length,
-    effective,
-  )
+  const confidence = result.diagnostics.avgConfidence
+  const status = computeStatus(confidence, result.items.length, effective)
 
   return {
     section,
     status,
-    strategy: result.strategy === 'none' ? null : result.strategy,
-    confidence: result.confidence,
+    textExtractor: result.diagnostics.textExtractorUsed,
+    confidence,
     itemCount: result.items.length,
     message: buildMessage(section, status, result),
   }
@@ -52,13 +60,16 @@ function buildMessage<T>(
   status: 'healthy' | 'degraded' | 'broken',
   result: PipelineResult<T>,
 ): string {
+  const extractor = result.diagnostics.textExtractorUsed ?? 'none'
+  const confidence = result.diagnostics.avgConfidence
+
   if (status === 'healthy') {
-    return `${section} extraction healthy using ${result.strategy}`
+    return `${section} extraction healthy using ${extractor}`
   }
 
   if (status === 'degraded') {
-    return `${section} extraction degraded: ${result.items.length} items, confidence ${result.confidence.toFixed(2)}`
+    return `${section} extraction degraded: ${result.items.length} items, confidence ${confidence.toFixed(2)}`
   }
 
-  return `${section} extraction broken: no reliable strategy succeeded`
+  return `${section} extraction broken: no reliable text extractor succeeded`
 }
