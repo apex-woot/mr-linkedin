@@ -35,7 +35,9 @@ export class SemanticTextExtractor implements TextExtractor {
 async function extractSemanticTexts(element: Locator): Promise<string[]> {
   const rawTexts: string[] = []
 
-  const primaryNodes = await element.locator('h1, h2, h3, h4, h5, h6, p, .text-body-medium, .text-body-small').all()
+  const primaryNodes = await element
+    .locator('h1, h2, h3, h4, h5, h6, p, .text-body-medium, .text-body-small')
+    .all()
   for (const node of primaryNodes) {
     const text = await node.textContent()
     if (text) rawTexts.push(text)
