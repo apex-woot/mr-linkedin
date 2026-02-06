@@ -1,15 +1,7 @@
 import type { Locator, Page } from 'playwright'
-import { SCRAPING_CONSTANTS } from '../../config/constants'
-import { EXPERIENCE_ITEM_SELECTORS } from '../../config/selectors'
+import { EducationPageExtractor } from '../../extraction/page-extractors'
 import type { Education } from '../../models'
 import { log } from '../../utils/logger'
-import { trySelectorsForAll } from '../../utils/selector-utils'
-import {
-  navigateAndWait,
-  scrollPageToBottom,
-  scrollPageToHalf,
-  waitAndFocus,
-} from '../utils'
 import { deduplicateItems, parseItems } from './common-patterns'
 import { extractUniqueTextsFromElement, parseDateRange } from './utils'
 
@@ -20,52 +12,21 @@ export async function getEducations(
   const educations: Education[] = []
 
   try {
-    const educationHeading = page.locator('h2:has-text("Education")').first()
-
-    if ((await educationHeading.count()) > 0) {
-      let educationSection = educationHeading.locator(
-        'xpath=ancestor::*[.//ul or .//ol][1]',
-      )
-      if ((await educationSection.count()) === 0)
-        educationSection = educationHeading.locator('xpath=ancestor::*[4]')
-
-      if ((await educationSection.count()) > 0) {
-        const items = await educationSection.locator('ul > li, ol > li').all()
-        const parsed = await parseItems(items, parseMainPageEducation, {
-          itemType: 'education from main page',
-        })
-        educations.push(...parsed)
-      }
+    const extraction = await new EducationPageExtractor().extract({
+      page,
+      baseUrl,
+    })
+    if (extraction.kind !== 'list' || extraction.items.length === 0) {
+      return []
     }
 
-    if (educations.length === 0) {
-      const eduUrl = `${baseUrl.replace(/\/$/, '')}/details/education/`
-      await navigateAndWait(page, eduUrl)
-      await page.waitForSelector('main', { timeout: 10000 })
-      await waitAndFocus(page, SCRAPING_CONSTANTS.EDUCATION_FOCUS_WAIT)
-      await scrollPageToHalf(page)
-      await scrollPageToBottom(
-        page,
-        SCRAPING_CONSTANTS.EDUCATION_SCROLL_PAUSE,
-        SCRAPING_CONSTANTS.EDUCATION_MAX_SCROLLS,
-      )
+    const items = extraction.items.map((item) => item.locator)
+    log.info(`Got ${items.length} education candidates`)
 
-      const itemsResult = await trySelectorsForAll(
-        page,
-        EXPERIENCE_ITEM_SELECTORS,
-        1,
-      )
-
-      log.info(`Got ${itemsResult.value.length} educations`)
-      log.debug(
-        `Found ${itemsResult.value.length} education items using: ${itemsResult.usedSelector}`,
-      )
-
-      const parsed = await parseItems(itemsResult.value, parseEducationItem, {
-        itemType: 'education item',
-      })
-      educations.push(...parsed)
-    }
+    const parsed = await parseItems(items, parseExtractedEducation, {
+      itemType: 'education item',
+    })
+    educations.push(...parsed)
   } catch (e) {
     log.warning(`Error getting educations: ${e}`)
   }
@@ -74,6 +35,10 @@ export async function getEducations(
     educations,
     (edu) => `${edu.institutionName}|${edu.degree}|${edu.fromDate}`,
   )
+}
+
+async function parseExtractedEducation(item: Locator): Promise<Education | null> {
+  return (await parseEducationItem(item)) ?? (await parseMainPageEducation(item))
 }
 
 async function parseMainPageEducation(
