@@ -36,6 +36,55 @@ const DEFAULT_VERSION: SelectorVersion = {
       ],
       containerSelectors: ['main'],
     },
+    education: {
+      itemSelectors: [
+        '[componentkey^="entity-collection-item"]',
+        '.pvs-list__container .pvs-list__paged-list-item',
+        'main ul > li',
+        'main ol > li',
+      ],
+      containerSelectors: ['main'],
+    },
+    patent: {
+      itemSelectors: [
+        '[data-view-name="profile-patents-details-view"] div:has(> div > p):not(:has(> p))',
+        '[componentkey^="com.linkedin.sdui.profile.card"] ul > li',
+        '.pvs-list__container .pvs-list__paged-list-item',
+        'li.artdeco-list__item',
+      ],
+      containerSelectors: ['main'],
+    },
+    interest: {
+      itemSelectors: [
+        '[role="tabpanel"] li',
+        '[role="tabpanel"] .pvs-list__paged-list-item',
+        'main ul > li',
+      ],
+      containerSelectors: ['main'],
+    },
+    contact: {
+      itemSelectors: [
+        'dialog section',
+        '[role="dialog"] section',
+        '.artdeco-modal section',
+      ],
+      containerSelectors: ['dialog', '[role="dialog"]', '.artdeco-modal'],
+    },
+    'top-card': {
+      itemSelectors: [
+        'section.artdeco-card[data-member-id]',
+        'main section.artdeco-card',
+      ],
+      containerSelectors: ['main'],
+    },
+    about: {
+      itemSelectors: [
+        '[data-testid="expandable-text-box"]',
+        '[data-view-name="profile-card-about"]',
+        '[data-view-name="profile-card"]',
+      ],
+      containerSelectors: ['main'],
+    },
   },
 }
 

@@ -1,6 +1,7 @@
 export * from './health'
 export * from './interpreters/accomplishment'
 export * from './interpreters/experience'
+export * from './page-extractors'
 export * from './pipeline'
 export * from './registry'
 export * from './self-heal'
