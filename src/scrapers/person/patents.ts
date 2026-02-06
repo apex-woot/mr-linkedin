@@ -10,6 +10,7 @@ import {
   scrollPageToHalf,
   waitAndFocus,
 } from '../utils'
+import { normalizePlainTextLines, toPlainText } from './utils'
 import { deduplicateItems, parseItems } from './common-patterns'
 
 /**
@@ -137,7 +138,7 @@ export async function getPatents(
       const itemsResult = await trySelectorsForAll(
         page,
         PATENT_ITEM_SELECTORS,
-        0,
+        1,
       )
 
       log.info(`Got ${itemsResult.value.length} patents`)
@@ -162,22 +163,27 @@ async function parseMainPagePatent(item: Locator): Promise<Patent | null> {
   // This is often just a title and maybe a subtitle
   try {
     const texts = await item.allInnerTexts()
-    const uniqueTexts = texts[0]?.split('\n').filter((t) => t.trim()) || []
+    const lines = normalizePlainTextLines(texts[0]?.split('\n') ?? [])
 
-    if (uniqueTexts.length === 0) return null
+    if (lines.length === 0) return null
 
-    const title = uniqueTexts[0]!
+    const title = lines[0]!
     let issuer: string | undefined
     let number: string | undefined
     let issuedDate: string | undefined
+    let description: string | undefined
 
-    if (uniqueTexts.length > 1) {
-      // Attempt to parse subtitle line: "US US10424882B2 · Issued Sep 24, 2019"
-      const subtitle = uniqueTexts[1]
-      const parsed = parsePatentSubtitle(subtitle || '')
+    const metadataLine = lines.slice(1).find(looksLikePatentMetadataLine)
+    if (metadataLine) {
+      const parsed = parsePatentSubtitle(metadataLine)
       issuer = parsed.issuer
       number = parsed.number
       issuedDate = parsed.issuedDate
+    }
+
+    const descriptionLines = lines.slice(1).filter((line) => line !== metadataLine)
+    if (descriptionLines.length > 0) {
+      description = descriptionLines.join('\n')
     }
 
     return {
@@ -185,6 +191,8 @@ async function parseMainPagePatent(item: Locator): Promise<Patent | null> {
       issuer,
       number,
       issuedDate,
+      description,
+      plainText: toPlainText(lines),
     }
   } catch (_e) {
     return null
@@ -208,53 +216,38 @@ async function parsePatentItem(item: Locator): Promise<Patent | null> {
         .filter((t) => t.length > 0)
     }
 
+    // Normalize and dedupe repeated hidden/visible text lines.
+    const lines = normalizePlainTextLines(texts)
+
     // Filter out "Patents" header and empty state messages
-    if (texts.length === 1 && texts[0] === 'Patents') return null
+    if (lines.length === 1 && lines[0] === 'Patents') return null
     if (
-      texts.length > 0 &&
-      texts.some((t) => t.includes('adds will appear here'))
+      lines.length > 0 &&
+      lines.some((t) => t.includes('adds will appear here'))
     )
       return null
 
-    // Filter out "Other inventors" and "+X" indicators from texts
-    texts = texts.filter(
-      (t) =>
-        t !== 'Other inventors' && !t.startsWith('+') && !/^[+\d\s]+$/.test(t),
-    )
+    if (lines.length === 0) return null
 
-    if (texts.length === 0) return null
-
-    const title = texts[0]!
+    const title = lines[0]!
     let issuer: string | undefined
     let number: string | undefined
     let issuedDate: string | undefined
     let description: string | undefined
 
-    // Subtitle is usually the second paragraph
-    if (texts.length > 1) {
-      const subtitle = texts[1]!
-      const parsed = parsePatentSubtitle(subtitle)
+    const metadataLine = lines.slice(1).find(looksLikePatentMetadataLine)
+    if (metadataLine) {
+      const parsed = parsePatentSubtitle(metadataLine)
+      issuer = parsed.issuer
+      number = parsed.number
+      issuedDate = parsed.issuedDate
+    }
 
-      // If the second paragraph looks like a subtitle (contains patent number format or 'Issued'), use it
-      // Otherwise, it might be the description if there is no subtitle
-      if (
-        parsed.issuer ||
-        parsed.number ||
-        parsed.issuedDate ||
-        subtitle.includes('Issued')
-      ) {
-        issuer = parsed.issuer
-        number = parsed.number
-        issuedDate = parsed.issuedDate
-
-        // If there's a 3rd paragraph, it's likely the description
-        if (texts.length > 2) {
-          description = texts.slice(2).join('\n')
-        }
-      } else {
-        // The 2nd paragraph didn't parse as a subtitle, treat it as description
-        description = texts.slice(1).join('\n')
-      }
+    const descriptionLines = lines
+      .slice(1)
+      .filter((line) => line !== metadataLine && !looksLikePatentMetadataLine(line))
+    if (descriptionLines.length > 0) {
+      description = descriptionLines.join('\n')
     }
 
     // Extract patent URL using functional pipeline
@@ -267,11 +260,23 @@ async function parsePatentItem(item: Locator): Promise<Patent | null> {
       issuedDate,
       url,
       description,
+      plainText: toPlainText(lines),
     }
   } catch (e) {
     log.debug(`Error parsing patent item: ${e}`)
     return null
   }
+}
+
+function looksLikePatentMetadataLine(line: string): boolean {
+  const normalized = line.trim()
+  if (!normalized) return false
+
+  if (/\bissued\b/i.test(normalized)) return true
+
+  // Examples: "US US10424882B2", "US 9,349,265"
+  const idLike = /^[A-Z]{2}\s+[A-Z0-9,\-]+(?:\s+[A-Z0-9,\-]+)*$/.test(normalized)
+  return idLike && /\d/.test(normalized)
 }
 
 function parsePatentSubtitle(subtitle: string): {
@@ -293,14 +298,18 @@ function parsePatentSubtitle(subtitle: string): {
     // Part 1: "US US10424882B2" or "US 9,349,265"
     const idPart = parts[0]
     if (idPart) {
-      // Check if it starts with a country code (2 uppercase letters usually)
-      const match = idPart.match(/^([A-Z]{2})\s+(.+)$/)
-      if (match) {
-        issuer = match[1]
-        number = match[2]
+      if (idPart.toLowerCase().startsWith('issued')) {
+        issuedDate = idPart.replace(/issued/i, '').trim() || issuedDate
       } else {
-        // fallback
-        number = idPart
+      // Check if it starts with a country code (2 uppercase letters usually)
+        const match = idPart.match(/^([A-Z]{2})\s+(.+)$/)
+        if (match) {
+          issuer = match[1]
+          number = match[2]
+        } else {
+          // fallback
+          number = idPart
+        }
       }
     }
 

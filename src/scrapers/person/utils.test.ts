@@ -1,5 +1,9 @@
 import { describe, expect, test } from 'bun:test'
-import { parseDateRange, parseEducationTimes, parseWorkTimes } from './utils'
+import {
+  normalizePlainTextLines,
+  parseDateRange,
+  toPlainText,
+} from './utils'
 
 describe('parseDateRange', () => {
   describe('basic date range parsing', () => {
@@ -105,19 +109,31 @@ describe('parseDateRange', () => {
   })
 })
 
-describe('parseWorkTimes (deprecated wrapper)', () => {
-  test('calls parseDateRange with includeDuration', () => {
-    const result = parseWorkTimes('Jan 2020 - Present · 4 yrs')
-    expect(result.fromDate).toBe('Jan 2020')
-    expect(result.toDate).toBe('Present')
-    expect(result.duration).toBe('4 yrs')
-  })
-})
+describe('plainText helpers', () => {
+  test('normalizes whitespace and removes adjacent duplicates', () => {
+    const result = normalizePlainTextLines([
+      '  US   US10424882B2  ',
+      'US US10424882B2',
+      'Issued   Sep 24, 2019',
+      'Issued Sep 24, 2019',
+    ])
 
-describe('parseEducationTimes (deprecated wrapper)', () => {
-  test('calls parseDateRange without duration', () => {
-    const result = parseEducationTimes('2018 - 2022')
-    expect(result.fromDate).toBe('2018')
-    expect(result.toDate).toBe('2022')
+    expect(result).toEqual(['US US10424882B2', 'Issued Sep 24, 2019'])
+  })
+
+  test('filters known noise lines', () => {
+    const result = normalizePlainTextLines([
+      'See patent',
+      'Other inventors',
+      '+3',
+      'Real description',
+    ])
+
+    expect(result).toEqual(['Real description'])
+  })
+
+  test('builds newline-joined plain text', () => {
+    const result = toPlainText(['Title', 'Title', 'Meta'])
+    expect(result).toBe('Title\nMeta')
   })
 })

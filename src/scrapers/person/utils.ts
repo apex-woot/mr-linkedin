@@ -115,33 +115,6 @@ export function parseDateRange(
   }
 }
 
-/**
- * @deprecated Use parseDateRange() with includeDuration option instead
- */
-export function parseWorkTimes(workTimes: string): {
-  fromDate: string | null
-  toDate: string | null
-  duration: string | null
-} {
-  const result = parseDateRange(workTimes, { includeDuration: true })
-  return {
-    fromDate: result.fromDate,
-    toDate: result.toDate,
-    duration: result.duration ?? null,
-  }
-}
-
-/**
- * @deprecated Use parseDateRange() without options instead
- */
-export function parseEducationTimes(times: string): {
-  fromDate: string | null
-  toDate: string | null
-} {
-  const result = parseDateRange(times)
-  return { fromDate: result.fromDate, toDate: result.toDate }
-}
-
 export function mapInterestTabToCategory(tabName: string): string {
   const tabLower = tabName.toLowerCase()
   if (tabLower.includes('compan')) return 'company'
@@ -163,6 +136,48 @@ export function mapContactHeadingToType(heading: string): string | null {
   if (lower.includes('birthday')) return 'birthday'
   if (lower.includes('address')) return 'address'
   return null
+}
+
+/**
+ * Normalizes extracted lines to stable text suitable for plainText fields.
+ */
+export function normalizePlainTextLines(
+  lines: Array<string | null | undefined>,
+): string[] {
+  const normalized = lines
+    .map((line) => (line ?? '').replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .filter((line) => !isNoiseLine(line))
+
+  const deduped: string[] = []
+  for (const line of normalized) {
+    if (deduped[deduped.length - 1] !== line) {
+      deduped.push(line)
+    }
+  }
+
+  return deduped
+}
+
+export function toPlainText(
+  lines: Array<string | null | undefined>,
+): string | undefined {
+  const normalized = normalizePlainTextLines(lines)
+  if (normalized.length === 0) return undefined
+  return normalized.join('\n')
+}
+
+function isNoiseLine(line: string): boolean {
+  const lower = line.toLowerCase()
+  if (
+    lower === 'see patent' ||
+    lower === 'show patent' ||
+    lower === 'other inventors'
+  ) {
+    return true
+  }
+
+  return line.startsWith('+') || /^[+\d\s]+$/.test(line)
 }
 
 /**

@@ -6,6 +6,7 @@ import { parseItems } from './common-patterns'
 import {
   extractUniqueTextsFromElement,
   mapInterestTabToCategory,
+  toPlainText,
 } from './utils'
 
 export async function getInterests(
@@ -116,7 +117,13 @@ async function parseInterestItem(
     const uniqueTexts = await extractUniqueTextsFromElement(item)
     const name = uniqueTexts.length > 0 ? (uniqueTexts[0] ?? null) : null
 
-    if (name && href) return { name, category, linkedinUrl: href }
+    if (name && href)
+      return {
+        name,
+        category,
+        linkedinUrl: href,
+        plainText: toPlainText(uniqueTexts),
+      }
     return null
   } catch (e) {
     log.debug(`Error parsing interest: ${e}`)
