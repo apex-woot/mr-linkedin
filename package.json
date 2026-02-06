@@ -50,13 +50,16 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "husky": "^9.1.7"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "scripts": {
     "test": "bun test",
+    "test:fast": "bun test ./tests/auth.unit.test.ts ./tests/parsers/*.test.ts ./src/scrapers/person/*.test.ts",
+    "test:ci": "bun test",
     "scrape": "bun run index.ts",
     "scrape:details": "bun run examples/scrape_details_section.ts",
     "scrape:education": "bun run examples/scrape_education_only.ts",
@@ -65,6 +68,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "build": "bun run build.ts",
+    "prepare": "husky",
     "prepublishOnly": "bun run build && bun test"
   }
 }
