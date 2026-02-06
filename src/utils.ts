@@ -140,7 +140,7 @@ export async function extractTextSafe(
 
 /**
  * Dynamically scrolls to the bottom of the page or a scrollable container.
- * Stops when the height remains stable for 3 consecutive checks.
+ * Stops when the height remains stable for 2 consecutive checks.
  * Hard cutoff at 10 scrolls.
  */
 export async function scrollToBottom(
@@ -155,7 +155,7 @@ export async function scrollToBottom(
   }
 
   let stableCount = 0
-  const stabilityThreshold = 3
+  const stabilityThreshold = 2
 
   for (let i = 0; i < cappedMaxScrolls; i++) {
     const scrollStats = await page.evaluate(() => {

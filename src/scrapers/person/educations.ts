@@ -53,7 +53,7 @@ export async function getEducations(
       const itemsResult = await trySelectorsForAll(
         page,
         EXPERIENCE_ITEM_SELECTORS,
-        0,
+        1,
       )
 
       log.info(`Got ${itemsResult.value.length} educations`)

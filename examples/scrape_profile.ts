@@ -52,7 +52,7 @@ async function runExample() {
     }
 
     const profile = await scrapePerson(browser.page, linkedinUrl, {
-      callback: createConsoleCallback(true),
+      callback: createConsoleCallback(),
       sections: onlyExperience
         ? {
             about: false,
