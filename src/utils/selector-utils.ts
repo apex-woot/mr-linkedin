@@ -136,11 +136,13 @@ export async function trySelectorsForAll(
   selectorGroup: SelectorGroup,
   minCount: number = 1,
 ): Promise<SelectorResult<Locator[]>> {
+  const requiredCount = Math.max(1, minCount)
+
   // Try primary selectors first
   for (const config of selectorGroup.primary) {
     const locators = await page.locator(config.selector).all()
 
-    if (locators.length >= minCount) {
+    if (locators.length >= requiredCount) {
       log.debug(
         `Found ${locators.length} elements with primary selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
       )
@@ -157,7 +159,7 @@ export async function trySelectorsForAll(
     for (const config of selectorGroup.fallback) {
       const locators = await page.locator(config.selector).all()
 
-      if (locators.length >= minCount) {
+      if (locators.length >= requiredCount) {
         log.debug(
           `Found ${locators.length} elements with fallback selector: ${config.selector}${config.description ? ` (${config.description})` : ''}`,
         )
@@ -170,7 +172,7 @@ export async function trySelectorsForAll(
     }
   }
 
-  log.debug(`No selector found matching ${minCount}+ elements`)
+  log.debug(`No selector found matching ${requiredCount}+ elements`)
   return { value: [], usedSelector: '', usedFallback: false }
 }
 

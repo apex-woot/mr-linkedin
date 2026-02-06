@@ -1,8 +1,13 @@
-import type { Locator, Page } from 'playwright'
+import type { Page } from 'playwright'
+import { AccomplishmentInterpreter } from '../../extraction/interpreters/accomplishment'
+import { ExtractionPipeline } from '../../extraction/pipeline'
+import { AriaStrategy } from '../../extraction/strategies/aria-strategy'
+import { RawTextStrategy } from '../../extraction/strategies/raw-text-strategy'
+import { SemanticStrategy } from '../../extraction/strategies/semantic-strategy'
 import type { Accomplishment } from '../../models'
 import { log } from '../../utils/logger'
 import { navigateAndWait, waitAndFocus } from '../utils'
-import { deduplicateItems, parseItems } from './common-patterns'
+import { deduplicateItems } from './common-patterns'
 
 export async function getAccomplishments(
   page: Page,
@@ -33,93 +38,38 @@ export async function getAccomplishments(
         .count()
       if (nothingToSee > 0) continue
 
-      const mainList = page
-        .locator('.pvs-list__container, main ul, main ol')
-        .first()
-      if ((await mainList.count()) === 0) continue
-
-      let items = await mainList.locator('.pvs-list__paged-list-item').all()
-      if (items.length === 0) items = await mainList.locator('> li').all()
-
-      log.info(`Got ${items.length} ${category} candidates`)
-      const parsed = await parseItems(
-        items,
-        async (item, _idx) => await parseAccomplishmentItem(item, category),
-        { itemType: category },
+      const pipeline = new ExtractionPipeline<Accomplishment>(
+        [
+          new AriaStrategy('accomplishment'),
+          new SemanticStrategy(),
+          new RawTextStrategy(),
+        ],
+        new AccomplishmentInterpreter({ category, urlPath }),
+        {
+          confidenceThreshold: 0.25,
+          captureHtmlOnFailure: true,
+        },
       )
 
-      // Deduplicate by title within this section
-      const unique = deduplicateItems(parsed, (a) => a.title)
-      accomplishments.push(...unique)
+      const result = await pipeline.extract(page)
+      if (result.items.length > 0) {
+        const unique = deduplicateItems(
+          result.items,
+          (item) => `${item.category}|${item.title}`,
+        )
+        accomplishments.push(...unique)
+      }
+
+      log.info(
+        `Got ${result.items.length} ${category} items (strategy: ${result.strategy}, confidence: ${result.confidence.toFixed(2)})`,
+      )
     } catch (e) {
       log.debug(`Error getting ${category}s: ${e}`)
     }
   }
 
-  return accomplishments
-}
-
-async function parseAccomplishmentItem(
-  item: Locator,
-  category: string,
-): Promise<Accomplishment | null> {
-  try {
-    const entity = item
-      .locator('div[data-view-name="profile-component-entity"]')
-      .first()
-    let spans: Locator[]
-    if ((await entity.count()) > 0)
-      spans = await entity.locator('span[aria-hidden="true"]').all()
-    else spans = await item.locator('span[aria-hidden="true"]').all()
-
-    let title = ''
-    let issuer = ''
-    let issuedDate = ''
-    let credentialId = ''
-
-    for (let i = 0; i < Math.min(spans.length, 5); i++) {
-      const text = (await spans[i]?.textContent())?.trim()
-      if (!text || text.length > 500) continue
-
-      if (i === 0) {
-        title = text
-      } else if (text.includes('Issued by')) {
-        const parts = text.split('·')
-        issuer = parts[0]?.replace('Issued by', '').trim() ?? ''
-        if (parts.length > 1) issuedDate = parts[1]?.trim() ?? ''
-      } else if (text.startsWith('Issued ') && !issuedDate) {
-        issuedDate = text.replace('Issued ', '')
-      } else if (text.startsWith('Credential ID')) {
-        credentialId = text.replace('Credential ID ', '')
-      } else if (i === 1 && !issuer) {
-        issuer = text
-      } else if (
-        /Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i.test(text) &&
-        !issuedDate
-      ) {
-        if (text.includes('·')) issuedDate = text.split('·')[0]?.trim() ?? ''
-        else issuedDate = text
-      }
-    }
-
-    const link = item
-      .locator('a[href*="credential"], a[href*="verify"]')
-      .first()
-    const credentialUrl =
-      (await link.count()) > 0 ? await link.getAttribute('href') : null
-
-    if (!title || title.length > 200) return null
-
-    return {
-      category,
-      title,
-      issuer: issuer || undefined,
-      issuedDate: issuedDate || undefined,
-      credentialId: credentialId || undefined,
-      credentialUrl: credentialUrl || undefined,
-    }
-  } catch (e) {
-    log.debug(`Error parsing accomplishment: ${e}`)
-    return null
-  }
+  return deduplicateItems(
+    accomplishments,
+    (item) => `${item.category}|${item.title}`,
+  )
 }
