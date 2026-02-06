@@ -25,7 +25,6 @@ export const SCRAPING_CONSTANTS = {
   EXPERIENCE_FOCUS_WAIT: 1.5,
   EDUCATION_FOCUS_WAIT: 2,
   PATENTS_FOCUS_WAIT: 2.0,
-
 } as const
 
 /**

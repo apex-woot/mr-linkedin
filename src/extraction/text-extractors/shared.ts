@@ -40,9 +40,7 @@ export async function extractLinksFromElement(element: Locator): Promise<Extract
         text: (await anchor.textContent())?.trim() ?? '',
         isExternal: !href.includes('linkedin.com'),
       })
-    } catch {
-      continue
-    }
+    } catch {}
   }
 
   return links

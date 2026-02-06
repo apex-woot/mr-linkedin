@@ -1,6 +1,6 @@
 import type { Locator, Page } from 'playwright'
-import { ContactParser } from '../../extraction/parsers'
 import { ContactPageExtractor } from '../../extraction/page-extractors'
+import { ContactParser } from '../../extraction/parsers'
 import { ExtractionPipeline } from '../../extraction/pipeline'
 import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import type { Contact } from '../../models'

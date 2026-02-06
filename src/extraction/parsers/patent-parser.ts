@@ -63,7 +63,7 @@ function looksLikePatentMetadataLine(line: string): boolean {
 
   if (/\bissued\b/i.test(normalized)) return true
 
-  const idLike = /^[A-Z]{2}\s+[A-Z0-9,\-]+(?:\s+[A-Z0-9,\-]+)*$/.test(normalized)
+  const idLike = /^[A-Z]{2}\s+[A-Z0-9,-]+(?:\s+[A-Z0-9,-]+)*$/.test(normalized)
   return idLike && /\d/.test(normalized)
 }
 

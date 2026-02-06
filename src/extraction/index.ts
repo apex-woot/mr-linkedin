@@ -1,6 +1,6 @@
 export * from './health'
-export * from './parsers'
 export * from './page-extractors'
+export * from './parsers'
 export * from './pipeline'
 export * from './registry'
 export * from './self-heal'

@@ -1,5 +1,5 @@
-export * from './accomplishment'
 export * from './about'
+export * from './accomplishment'
 export * from './contact'
 export * from './education'
 export * from './experience'

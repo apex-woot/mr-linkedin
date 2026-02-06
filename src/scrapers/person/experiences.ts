@@ -1,6 +1,6 @@
 import type { Page } from 'playwright'
-import { ExperienceParser } from '../../extraction/parsers'
 import { ExperiencePageExtractor } from '../../extraction/page-extractors'
+import { ExperienceParser } from '../../extraction/parsers'
 import { ExtractionPipeline } from '../../extraction/pipeline'
 import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import type { Experience } from '../../models/person'

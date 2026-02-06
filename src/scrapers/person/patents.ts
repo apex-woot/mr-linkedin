@@ -1,6 +1,6 @@
 import type { Page } from 'playwright'
-import { PatentParser } from '../../extraction/parsers'
 import { PatentPageExtractor } from '../../extraction/page-extractors'
+import { PatentParser } from '../../extraction/parsers'
 import { ExtractionPipeline } from '../../extraction/pipeline'
 import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import type { Patent } from '../../models/person'

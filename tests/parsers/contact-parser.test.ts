@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { ContactParser } from '../../src/extraction/parsers'
 import type { RawSection } from '../../src/extraction/page-extractors'
+import { ContactParser } from '../../src/extraction/parsers'
 
 describe('ContactParser', () => {
   const parser = new ContactParser()

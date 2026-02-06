@@ -1,6 +1,6 @@
 import type { Page } from 'playwright'
-import { TopCardParser, type TopCardResult } from '../../extraction/parsers'
 import { TopCardPageExtractor } from '../../extraction/page-extractors'
+import { TopCardParser, type TopCardResult } from '../../extraction/parsers'
 import { ExtractionPipeline } from '../../extraction/pipeline'
 import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 

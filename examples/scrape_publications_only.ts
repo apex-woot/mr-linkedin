@@ -4,10 +4,10 @@ import {
   AriaTextExtractor,
   BrowserManager,
   ExtractionPipeline,
-  RawTextExtractor,
-  SemanticTextExtractor,
   loginWithCookie,
   loginWithCredentials,
+  RawTextExtractor,
+  SemanticTextExtractor,
 } from '../src'
 import type { Accomplishment } from '../src/models'
 

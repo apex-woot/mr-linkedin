@@ -1,6 +1,6 @@
 import type { Page } from 'playwright'
-import { AboutParser } from '../../extraction/parsers'
 import { AboutPageExtractor } from '../../extraction/page-extractors'
+import { AboutParser } from '../../extraction/parsers'
 import { ExtractionPipeline } from '../../extraction/pipeline'
 import { AriaTextExtractor, RawTextExtractor, SemanticTextExtractor } from '../../extraction/text-extractors'
 import { log } from '../../utils/logger'
