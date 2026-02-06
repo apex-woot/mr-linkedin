@@ -26,8 +26,6 @@ export const SCRAPING_CONSTANTS = {
   EDUCATION_FOCUS_WAIT: 2,
   PATENTS_FOCUS_WAIT: 2.0,
 
-  // Text filtering thresholds
-  MAX_FALLBACK_TEXT_LENGTH: 500,
 } as const
 
 /**
